@@ -1,0 +1,36 @@
+name: latakia_consumer_spending
+description: نظام أتمتة دائرة الإنفاق الاستهلاكي - مديرية مالية اللاذقية
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  go_router: ^14.2.0
+  shared_preferences: ^2.2.3
+  google_fonts: ^6.2.1
+  crypto: ^3.0.3
+  pdf: ^3.11.0
+  printing: ^5.13.1
+  qr_flutter: ^4.1.0
+  file_picker: ^8.0.7
+  http: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logos/mof_logo.png
+    - assets/logos/dept_logo.png
