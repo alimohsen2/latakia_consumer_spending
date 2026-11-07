@@ -625,9 +625,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         ),
       );
 
-  Widget _signatoryCard(String role, String name, IconData icon,
-          {bool automatic = true}) =>
-      Container(
+  Widget _signatoryCard(String role, String name, IconData icon) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.p.surfaceAlt,
@@ -649,33 +647,11 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
+                Wrap(spacing: 6, runSpacing: 4, children: [
                   Text(
                     role,
                     style: TextStyle(color: context.p.muted, fontSize: 11),
                   ),
-                  if (automatic) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: kPrimary.withValues(alpha: .1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'تلقائي',
-                        style: TextStyle(
-                          color: kPrimary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
                 ]),
                 const SizedBox(height: 2),
                 Text(
@@ -689,8 +665,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               ],
             ),
           ),
-          if (automatic)
-            Icon(CupertinoIcons.lock_fill, size: 14, color: context.p.muted),
         ]),
       );
 
@@ -702,7 +676,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final availableMonitors = st.users
         .where((user) =>
             user.active &&
-            user.role == 'monitor' &&
+            (user.role == 'monitor' || user.role == 'user') &&
             user.division == r.division)
         .map((user) => user.name)
         .toSet()
@@ -1247,13 +1221,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                     ),
                   ]),
                   const SizedBox(height: 2),
-                  Text(
-                    'المراقب الأول والثاني إجباريان · حد أقصى 5',
-                    style: TextStyle(
-                      color: context.p.muted,
-                      fontSize: 11,
-                    ),
-                  ),
                 ],
               ),
               OutlinedButton.icon(
@@ -1348,18 +1315,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                         icon: const Icon(CupertinoIcons.trash),
                       )
                     else
-                      Container(
-                        width: 48,
-                        alignment: Alignment.center,
-                        child: Text(
-                          'إجباري',
-                          style: TextStyle(
-                            color: kPrimary.withValues(alpha: .7),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      const SizedBox(width: 48),
                   ]),
                 ),
             const SizedBox(height: 16),
@@ -1376,13 +1332,6 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'يُجلب الاسم تلقائياً من حسابات النظام',
-                      style: TextStyle(
-                        color: context.p.muted,
-                        fontSize: 11,
-                      ),
-                    ),
                   ],
                 ),
               ),
