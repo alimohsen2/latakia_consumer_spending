@@ -174,10 +174,17 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           .split(RegExp(r'[,،;\n]+'))
           .map((name) => name.trim())
           .where((name) => name.isNotEmpty)
+          .take(5)
           .map((name) => TextEditingController(text: name)),
     );
-    if (inspectorControllers.isEmpty) {
+    while (inspectorControllers.length < 2) {
       inspectorControllers.add(TextEditingController());
+    }
+    if (inspectorControllers.length > 5) {
+      for (var i = 5; i < inspectorControllers.length; i++) {
+        inspectorControllers[i].dispose();
+      }
+      inspectorControllers.removeRange(5, inspectorControllers.length);
     }
     fieldHead.text = r.fieldHead;
     deptHead.text = r.deptHead;
@@ -211,45 +218,17 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     r.deptHead = deptHead.text.trim();
   }
 
-  Future<void> _addInspector() async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('إضافة مراقب'),
-        content: SizedBox(
-          width: 420,
-          child: TextField(
-            controller: controller,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) Navigator.pop(ctx, value.trim());
-            },
-            decoration: const InputDecoration(labelText: 'اسم المراقب'),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isNotEmpty) Navigator.pop(ctx, value);
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (name == null || !mounted) return;
-    inspectorControllers.add(TextEditingController(text: name));
+  void _addInspector() {
+    if (inspectorControllers.length >= 5) {
+      toast(context, 'الحد الأقصى 5 مراقبين');
+      return;
+    }
+    inspectorControllers.add(TextEditingController());
     _touch();
   }
 
   void _removeInspector(int index) {
-    if (index == 0) return;
+    if (index < 2 || inspectorControllers.length <= 2) return;
     final controller = inspectorControllers.removeAt(index);
     controller.dispose();
     _touch();
@@ -378,6 +357,16 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final e = st.validateSerial(r.serial, exceptId: r.id);
     if (e != null) return setState(() => err = e);
     if (r.taxpayerId.isEmpty) return setState(() => err = 'اختر المكلف');
+    final selectedInspectors = inspectorControllers
+        .map((controller) => controller.text.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (selectedInspectors.length < 2) {
+      return setState(() => err = 'يجب اختيار مراقبين (2 على الأقل)');
+    }
+    if (selectedInspectors.toSet().length != selectedInspectors.length) {
+      return setState(() => err = 'لا يمكن تكرار المراقب');
+    }
     if (submit && r.items.isEmpty) {
       return setState(() => err = 'أضف مخالفة واحدة على الأقل');
     }
@@ -388,6 +377,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Future<void> _preview(AppStore st) async {
     _collect();
+    final selectedInspectors = inspectorControllers
+        .map((controller) => controller.text.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (selectedInspectors.length < 2) {
+      if (mounted) toast(context, 'يجب اختيار مراقبين (2 على الأقل)');
+      return;
+    }
+    if (selectedInspectors.toSet().length != selectedInspectors.length) {
+      if (mounted) toast(context, 'لا يمكن تكرار المراقب');
+      return;
+    }
     try {
       final t = st.tp(r.taxpayerId);
       final bytes = await buildReportPdf(r, t);
@@ -624,7 +625,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         ),
       );
 
-  Widget _signatoryCard(String role, String name, IconData icon) => Container(
+  Widget _signatoryCard(String role, String name, IconData icon,
+          {bool automatic = true}) =>
+      Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.p.surfaceAlt,
@@ -646,21 +649,48 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  role,
-                  style: TextStyle(color: context.p.muted, fontSize: 11),
-                ),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                  Text(
+                    role,
+                    style: TextStyle(color: context.p.muted, fontSize: 11),
+                  ),
+                  if (automatic) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: kPrimary.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'تلقائي',
+                        style: TextStyle(
+                          color: kPrimary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ]),
                 const SizedBox(height: 2),
                 Text(
-                  name.isEmpty ? '—' : name,
-                  style: const TextStyle(
+                  name.isEmpty ? '— (لم يُعثر على حساب)' : name,
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
+                    color: name.isEmpty ? kRed : null,
                   ),
                 ),
               ],
             ),
           ),
+          if (automatic)
+            Icon(CupertinoIcons.lock_fill, size: 14, color: context.p.muted),
         ]),
       );
 
@@ -1186,15 +1216,49 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               Field('الرقم الوطني', ctl: sNat, onChanged: (_) => _touch())
             ]),
             const SizedBox(height: 16),
-            Row(children: [
-              const Expanded(
-                child: Text(
-                  'المراقبون',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Text(
+                      'المراقبون',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: kPrimary.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: kPrimary.withValues(alpha: .25)),
+                      ),
+                      child: Text(
+                        '${inspectorControllers.length}/5',
+                        style: const TextStyle(
+                          color: kPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(
+                    'المراقب الأول والثاني إجباريان · حد أقصى 5',
+                    style: TextStyle(
+                      color: context.p.muted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
               OutlinedButton.icon(
-                onPressed: _addInspector,
+                onPressed:
+                    inspectorControllers.length >= 5 ? null : _addInspector,
                 icon: const Icon(CupertinoIcons.add, size: 18),
                 label: const Text('إضافة مراقب'),
               ),
@@ -1213,17 +1277,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(children: [
                     Container(
-                      width: 26,
-                      height: 26,
+                      width: 28,
+                      height: 28,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF8B7FD1).withValues(alpha: .12),
+                        color: (i < 2 ? kPrimary : const Color(0xFF8B7FD1))
+                            .withValues(alpha: .12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${i + 1}',
-                        style: const TextStyle(
-                          color: Color(0xFF6C5FC0),
+                        style: TextStyle(
+                          color: i < 2 ? kPrimary : const Color(0xFF6C5FC0),
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
                         ),
@@ -1245,7 +1310,16 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                             borderRadius: BorderRadius.circular(16),
                             hint: const Text('اختر المراقب'),
                             items: [
-                              for (final name in availableMonitors)
+                              for (final name in availableMonitors.where(
+                                  (name) =>
+                                      name == inspectorControllers[i].text ||
+                                      !inspectorControllers
+                                          .asMap()
+                                          .entries
+                                          .where((entry) => entry.key != i)
+                                          .map((entry) =>
+                                              entry.value.text.trim())
+                                          .contains(name)))
                                 DropdownMenuItem(
                                   value: name,
                                   child: Text(name),
@@ -1267,17 +1341,54 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                         ),
                       ),
                     ),
-                    if (i > 0)
+                    if (i >= 2)
                       IconButton(
                         tooltip: 'حذف المراقب',
                         onPressed: () => _removeInspector(i),
                         icon: const Icon(CupertinoIcons.trash),
                       )
                     else
-                      const SizedBox(width: 48),
+                      Container(
+                        width: 48,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'إجباري',
+                          style: TextStyle(
+                            color: kPrimary.withValues(alpha: .7),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                   ]),
                 ),
             const SizedBox(height: 16),
+            Row(children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'الضابطة الموقعة',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'يُجلب الاسم تلقائياً من حسابات النظام',
+                      style: TextStyle(
+                        color: context.p.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(CupertinoIcons.sparkles, size: 18, color: kGold),
+            ]),
+            const SizedBox(height: 10),
             _signatoryCard(
               'رئيس الشعبة الميدانية',
               fieldHead.text,
