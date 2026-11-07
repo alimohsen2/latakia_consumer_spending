@@ -275,6 +275,13 @@ class _UsersScreenState extends State<UsersScreen> {
         ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/users/${user.id}/profile');
+            },
+            child: const Text('عرض الملف الشخصي'),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('إغلاق'),
           ),

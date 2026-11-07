@@ -55,6 +55,8 @@ const _items = [
       'users.manage',
       'المستخدمون والصلاحيات',
       Color(0xFF9FE3C0)),
+  _Nav('/profile', 'ملفي الشخصي', CupertinoIcons.person_crop_circle, null,
+      'المستخدمون والصلاحيات', Color(0xFF9EC5FF)),
   _Nav('/change-password', 'تغيير كلمة المرور', CupertinoIcons.lock_rotation,
       null, 'المستخدمون والصلاحيات', Color(0xFF8ADCE3)),
   _Nav('/permissions', 'الصلاحيات', CupertinoIcons.lock_shield,
@@ -708,6 +710,7 @@ class _TopBarState extends State<TopBar> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           color: context.p.surface,
           onSelected: (v) {
+            if (v == 'profile') context.go('/profile');
             if (v == 'verify') context.go('/verify');
             if (v == 'theme') st.toggleDarkMode();
             if (v == 'logout') {
@@ -716,6 +719,7 @@ class _TopBarState extends State<TopBar> {
             }
           },
           itemBuilder: (_) => [
+            const PopupMenuItem(value: 'profile', child: Text('الملف الشخصي')),
             const PopupMenuItem(value: 'verify', child: Text('التحقق من محضر')),
             PopupMenuItem(
                 value: 'theme',

@@ -12,6 +12,7 @@ import 'screens/admin_screens.dart';
 import 'screens/archive_screens.dart';
 import 'screens/field_screens.dart';
 import 'screens/misc_screens.dart';
+import 'screens/profile_screen.dart';
 
 const _guards = [
   ['/reports-center', 'reports.center'],
@@ -83,6 +84,7 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 path: '/taxpayers/:id/edit',
                 builder: (c, s) =>
                     TaxpayerFormScreen(id: s.pathParameters['id'])),
+            GoRoute(path: '/profile', builder: (c, s) => const ProfileScreen()),
             GoRoute(
                 path: '/taxpayers/:id/file',
                 builder: (c, s) =>
@@ -136,6 +138,10 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 path: '/field/:id',
                 builder: (c, s) =>
                     FieldDraftEditorScreen(id: s.pathParameters['id']!)),
+            GoRoute(
+                path: '/users/:id/profile',
+                builder: (c, s) =>
+                    ProfileScreen(userId: s.pathParameters['id']!)),
             GoRoute(path: '/users', builder: (c, s) => const UsersScreen()),
             GoRoute(
                 path: '/active-users',
