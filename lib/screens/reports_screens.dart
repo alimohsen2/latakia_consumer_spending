@@ -675,9 +675,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final auto = st.settings['serialMode'] == 'auto';
     final availableMonitors = st.users
         .where((user) =>
-            user.active &&
-            (user.role == 'monitor' || user.role == 'user') &&
-            user.division == r.division)
+            user.active && (user.role == 'monitor' || user.role == 'user'))
         .map((user) => user.name)
         .toSet()
         .toList()
