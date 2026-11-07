@@ -392,6 +392,263 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     }
   }
 
+  Widget _formSection({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required List<Widget> children,
+    Widget? action,
+  }) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: context.p.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (action != null) ...[
+                const SizedBox(width: 8),
+                action,
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyBlock({
+    required IconData icon,
+    required String title,
+    required String message,
+    required Widget action,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: context.p.surfaceAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.p.border),
+      ),
+      child: Column(children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: kPrimary.withValues(alpha: .08),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: kPrimary, size: 26),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.p.muted, fontSize: 12),
+        ),
+        const SizedBox(height: 14),
+        action,
+      ]),
+    );
+  }
+
+  Widget _autosaveBadge() {
+    final done = saved.isNotEmpty;
+    final color = done ? kPrimary : kGold;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: .22)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(
+          done ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.clock,
+          size: 13,
+          color: color,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          done ? 'حُفظت المسودة · $saved' : 'حفظ تلقائي كل 5 ثوانٍ',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  List<Widget> _progressChips() {
+    final steps = [
+      ('بيانات المحضر', serial.text.trim().isNotEmpty),
+      ('المنشأة', r.taxpayerId.isNotEmpty),
+      ('المخالفات', r.items.isNotEmpty),
+      ('التبليغ', sName.text.trim().isNotEmpty),
+    ];
+    return [
+      for (var i = 0; i < steps.length; i++)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: steps[i].$2
+                ? kPrimary.withValues(alpha: .1)
+                : context.p.surfaceAlt,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: steps[i].$2
+                  ? kPrimary.withValues(alpha: .35)
+                  : context.p.border,
+            ),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 16,
+              height: 16,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: steps[i].$2 ? kPrimary : context.p.border,
+                shape: BoxShape.circle,
+              ),
+              child: steps[i].$2
+                  ? const Icon(Icons.check, size: 10, color: Colors.white)
+                  : Text(
+                      '${i + 1}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: context.p.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              steps[i].$1,
+              style: TextStyle(
+                fontSize: 11,
+                color: steps[i].$2 ? kPrimary : context.p.muted,
+                fontWeight: steps[i].$2 ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ]),
+        ),
+    ];
+  }
+
+  Widget _summaryRow(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: .65),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _signatoryCard(String role, String name, IconData icon) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.p.surfaceAlt,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: context.p.border),
+        ),
+        child: Row(children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: kPrimary.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: kPrimary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  role,
+                  style: TextStyle(color: context.p.muted, fontSize: 11),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  name.isEmpty ? '—' : name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+      );
+
   @override
   Widget build(BuildContext context) {
     final st = context.read<AppStore>();
@@ -475,46 +732,138 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final form = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Expanded(
-              child: PageHeader('إنشاء محضر ضبط مخالفة',
-                  subtitle: 'المرسوم التشريعي 11/2015'),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                kPrimary.withValues(alpha: .1),
+                context.p.surface,
+              ],
             ),
-            if (saved.isNotEmpty)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: kPrimary.withValues(alpha: .1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.check_circle, size: 14, color: kPrimary),
-                  const SizedBox(width: 6),
-                  Text('حُفظت المسودة تلقائياً · $saved',
-                      style: const TextStyle(
-                          color: kPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ]),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: kPrimary.withValues(alpha: .18)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF2E8C7E), Color(0xFF17574E)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kPrimary.withValues(alpha: .25),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(CupertinoIcons.doc_text,
+                        color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'إنشاء محضر ضبط مخالفة',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'المرسوم التشريعي 11/2015 · محضر ${r.serial.isEmpty ? 'جديد' : 'رقم ${r.serial}'}',
+                          style: TextStyle(
+                            color: context.p.muted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-          ],
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _autosaveBadge(),
+                  ..._progressChips(),
+                ],
+              ),
+            ],
+          ),
         ),
+        if (err != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: kRed.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: kRed.withValues(alpha: .25)),
+            ),
+            child: Row(children: [
+              const Icon(CupertinoIcons.exclamationmark_circle_fill,
+                  color: kRed, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  err!,
+                  style: const TextStyle(
+                    color: kRed,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ],
         if (r.returnNote != null && r.returnNote!.isNotEmpty) ...[
           const SizedBox(height: 16),
           AppCard(
-              child: Text('أُعيد للتعديل: ${r.returnNote}',
-                  style: const TextStyle(color: kRed))),
+            child: Row(children: [
+              const Icon(CupertinoIcons.arrow_uturn_left_circle,
+                  color: kRed, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'أُعيد للتعديل: ${r.returnNote}',
+                  style: const TextStyle(
+                    color: kRed,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ]),
+          ),
         ],
         const SizedBox(height: 16),
-        AppCard(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('بيانات المحضر',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
+        _formSection(
+          icon: CupertinoIcons.doc_text,
+          color: kGold,
+          title: 'بيانات المحضر',
+          subtitle: 'الرقم والتاريخ والأمر الإداري',
+          children: [
             responsiveFieldRows([
               Field(
                   auto ? 'الرقم التسلسلي (تلقائي)' : 'الرقم المطبوع على الورقة',
@@ -553,96 +902,267 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 ),
               ),
             ]),
-            if (err != null) ...[
-              const SizedBox(height: 8),
-              Text(err!, style: const TextStyle(color: kRed)),
-            ],
-          ]),
+          ],
         ),
         const SizedBox(height: 16),
-        AppCard(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Text('المنشأة',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              const Spacer(),
-              OutlinedButton.icon(
+        _formSection(
+          icon: CupertinoIcons.briefcase,
+          color: const Color(0xFF7FB8FF),
+          title: 'المنشأة',
+          subtitle: t == null
+              ? 'لم يتم اختيار المكلف بعد'
+              : 'بيانات المكلف المرتبط بالمحضر',
+          action: OutlinedButton.icon(
+            onPressed: () => _pick(st),
+            icon: Icon(t == null
+                ? CupertinoIcons.search
+                : CupertinoIcons.arrow_2_circlepath),
+            label: Text(t == null ? 'اختيار' : 'تغيير'),
+          ),
+          children: [
+            if (t == null)
+              _emptyBlock(
+                icon: CupertinoIcons.briefcase,
+                title: 'اختر المكلف',
+                message: 'ابحث بالاسم أو الرقم الضريبي لربط المحضر بالمنشأة.',
+                action: FilledButton.icon(
                   onPressed: () => _pick(st),
-                  icon: const Icon(CupertinoIcons.search),
-                  label: Text(t == null ? 'اختيار المكلف' : 'تغيير المكلف'))
-            ]),
-            if (t != null) ...[
-              kv('المنشأة', t.name),
-              kv('العنوان', t.address),
-              kv('المالك المسجل', t.owner),
-              kv('المهنة', t.profession),
-              kv('الحالة', t.status)
+                  icon: const Icon(CupertinoIcons.search, size: 18),
+                  label: const Text('اختيار المكلف'),
+                ),
+              )
+            else ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: context.p.surfaceAlt,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.p.border),
+                ),
+                child: Row(children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor:
+                        const Color(0xFF7FB8FF).withValues(alpha: .18),
+                    child: const Icon(CupertinoIcons.briefcase,
+                        color: Color(0xFF2F6B4A), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${t.category} · ${t.taxNo}',
+                          style: TextStyle(
+                            color: context.p.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StatusBadge(t.status),
+                ]),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 24,
+                runSpacing: 4,
+                children: [
+                  SizedBox(
+                    width: 250,
+                    child: Column(children: [
+                      kv('الرقم الضريبي', t.taxNo),
+                      kv('العنوان', t.address),
+                    ]),
+                  ),
+                  SizedBox(
+                    width: 250,
+                    child: Column(children: [
+                      kv('المالك المسجل', t.owner),
+                      kv('المهنة', t.profession),
+                    ]),
+                  ),
+                ],
+              ),
             ],
-          ]),
+          ],
         ),
         const SizedBox(height: 16),
-        AppCard(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              const Text('المخالفات المضبوطة',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              const Spacer(),
-              OutlinedButton.icon(
-                  onPressed: () => _addItem(st),
-                  icon: const Icon(CupertinoIcons.add),
-                  label: const Text('إضافة مخالفة'))
-            ]),
+        _formSection(
+          icon: CupertinoIcons.exclamationmark_triangle,
+          color: kRed,
+          title: 'المخالفات المضبوطة',
+          subtitle: r.items.isEmpty
+              ? 'أضف المخالفات المرصودة في المحضر'
+              : '${r.items.length} مخالفة · ${money(r.total)} ل.س',
+          action: OutlinedButton.icon(
+            onPressed: () => _addItem(st),
+            icon: const Icon(CupertinoIcons.add),
+            label: const Text('إضافة'),
+          ),
+          children: [
             if (r.items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: Center(
-                  child: Text('لم تُضف مخالفات بعد',
-                      style: TextStyle(color: context.p.muted)),
+              _emptyBlock(
+                icon: CupertinoIcons.exclamationmark_triangle,
+                title: 'لم تُضف مخالفات بعد',
+                message: 'اختر نوع المخالفة والمادة لتسجيل قيمة الضبط.',
+                action: FilledButton.icon(
+                  onPressed: () => _addItem(st),
+                  icon: const Icon(CupertinoIcons.add, size: 18),
+                  label: const Text('إضافة مخالفة'),
                 ),
               )
             else
               for (var i = 0; i < r.items.length; i++)
-                ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(r.items[i].type),
-                    subtitle: Text(
-                        'المادة: ${r.items[i].article.isEmpty ? '—' : r.items[i].article}'),
-                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('${money(r.items[i].fine)} ل.س'),
-                      IconButton(
-                          tooltip: 'حذف المخالفة',
-                          icon: const Icon(CupertinoIcons.trash),
-                          onPressed: () {
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.p.surfaceAlt,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.p.border),
+                  ),
+                  child: Row(children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: kRed.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: kRed,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            r.items[i].type,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'المادة: ${r.items[i].article.isEmpty ? '—' : r.items[i].article}',
+                            style: TextStyle(
+                              color: context.p.muted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${money(r.items[i].fine)} ل.س',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
                             r.items.removeAt(i);
                             _touch();
-                          })
-                    ])),
-            const Divider(),
-            rowOf([
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: Icon(
+                              CupertinoIcons.trash,
+                              size: 15,
+                              color: kRed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ]),
+                ),
+            const SizedBox(height: 6),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            responsiveFieldRows([
               Field('غرامة التأخير شهرياً %',
                   ctl: lateCtl,
                   type: TextInputType.number,
                   onChanged: (_) => _touch()),
-              Expanded(
-                  flex: 2,
-                  child: Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Text('قيمة الضبط: ${money(r.total)} ل.س',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16))))
             ]),
-          ]),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: kRed.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: kRed.withValues(alpha: .2)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: kRed.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(CupertinoIcons.tag, size: 16, color: kRed),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'قيمة الضبط الإجمالية',
+                    style: TextStyle(color: context.p.muted, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    '${money(r.total)} ل.س',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: kRed,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        AppCard(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('التبليغ والضابطة',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
+        _formSection(
+          icon: CupertinoIcons.person_2,
+          color: const Color(0xFF8B7FD1),
+          title: 'التبليغ والضابطة',
+          subtitle: 'بيانات المتبلغ والمراقبين والتوقيعات',
+          children: [
             responsiveFieldRows([
               Field('المتبلغ', ctl: sName, onChanged: (_) => _touch()),
               Field('صفته', ctl: sCap, onChanged: (_) => _touch()),
@@ -650,111 +1170,256 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               Field('اسم الأم', ctl: sMother, onChanged: (_) => _touch()),
               Field('الرقم الوطني', ctl: sNat, onChanged: (_) => _touch())
             ]),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(children: [
-              const Text('المراقبون',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const Spacer(),
+              const Expanded(
+                child: Text(
+                  'المراقبون',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+              ),
               OutlinedButton.icon(
                 onPressed: _addInspector,
-                icon: const Icon(CupertinoIcons.add),
+                icon: const Icon(CupertinoIcons.add, size: 18),
                 label: const Text('إضافة مراقب'),
               ),
             ]),
-            for (var i = 0; i < inspectorControllers.length; i++)
+            if (inspectorControllers.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(children: [
-                  Expanded(
-                    child: InputDecorator(
-                      decoration:
-                          InputDecoration(labelText: 'المراقب ${i + 1}'),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: availableMonitors
-                                  .contains(inspectorControllers[i].text)
-                              ? inspectorControllers[i].text
-                              : null,
-                          isDense: true,
-                          isExpanded: true,
-                          borderRadius: BorderRadius.circular(16),
-                          hint: const Text('اختر المراقب'),
-                          items: [
-                            for (final name in availableMonitors)
-                              DropdownMenuItem(
-                                value: name,
-                                child: Text(name),
-                              ),
-                            if (inspectorControllers[i].text.isNotEmpty &&
-                                !availableMonitors
-                                    .contains(inspectorControllers[i].text))
-                              DropdownMenuItem(
-                                value: inspectorControllers[i].text,
-                                child: Text(inspectorControllers[i].text),
-                              ),
-                          ],
-                          onChanged: (name) {
-                            if (name == null) return;
-                            inspectorControllers[i].text = name;
-                            _touch();
-                          },
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  'لم يُضف مراقبون بعد',
+                  style: TextStyle(color: context.p.muted, fontSize: 12),
+                ),
+              )
+            else
+              for (var i = 0; i < inspectorControllers.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(children: [
+                    Container(
+                      width: 26,
+                      height: 26,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B7FD1).withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: Color(0xFF6C5FC0),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
                         ),
                       ),
                     ),
-                  ),
-                  if (i > 0)
-                    IconButton(
-                      tooltip: 'حذف المراقب',
-                      onPressed: () => _removeInspector(i),
-                      icon: const Icon(CupertinoIcons.trash),
-                    )
-                  else
-                    const SizedBox(width: 48),
-                ]),
-              ),
-            const SizedBox(height: 12),
-            responsiveFieldRows([
-              Field('رئيس الشعبة الميدانية', ctl: fieldHead, readOnly: true)
-            ]),
-            const SizedBox(height: 12),
-            responsiveFieldRows(
-                [Field('رئيس دائرة الإنفاق الإستهلاكي', ctl: deptHead, readOnly: true)]),
-          ]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InputDecorator(
+                        decoration:
+                            InputDecoration(labelText: 'المراقب ${i + 1}'),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: availableMonitors
+                                    .contains(inspectorControllers[i].text)
+                                ? inspectorControllers[i].text
+                                : null,
+                            isDense: true,
+                            isExpanded: true,
+                            borderRadius: BorderRadius.circular(16),
+                            hint: const Text('اختر المراقب'),
+                            items: [
+                              for (final name in availableMonitors)
+                                DropdownMenuItem(
+                                  value: name,
+                                  child: Text(name),
+                                ),
+                              if (inspectorControllers[i].text.isNotEmpty &&
+                                  !availableMonitors
+                                      .contains(inspectorControllers[i].text))
+                                DropdownMenuItem(
+                                  value: inspectorControllers[i].text,
+                                  child: Text(inspectorControllers[i].text),
+                                ),
+                            ],
+                            onChanged: (name) {
+                              if (name == null) return;
+                              inspectorControllers[i].text = name;
+                              _touch();
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (i > 0)
+                      IconButton(
+                        tooltip: 'حذف المراقب',
+                        onPressed: () => _removeInspector(i),
+                        icon: const Icon(CupertinoIcons.trash),
+                      )
+                    else
+                      const SizedBox(width: 48),
+                  ]),
+                ),
+            const SizedBox(height: 16),
+            _signatoryCard(
+              'رئيس الشعبة الميدانية',
+              fieldHead.text,
+              CupertinoIcons.person_crop_circle,
+            ),
+            const SizedBox(height: 8),
+            _signatoryCard(
+              'رئيس دائرة الإنفاق الإستهلاكي',
+              deptHead.text,
+              CupertinoIcons.person_crop_circle_fill,
+            ),
+          ],
         ),
       ],
     );
 
-    final summary = AppCard(
+    final summary = Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [Color(0xFF1B6157), Color(0xFF0C352F)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: .1)),
+        boxShadow: [
+          BoxShadow(
+            color: kPrimary.withValues(alpha: .3),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('الملخص',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-          const SizedBox(height: 12),
-          kv('عدد المخالفات', '${r.items.length}'),
-          kv('غرامة التأخير شهرياً', '${lateCtl.text}%'),
-          const Divider(height: 20),
-          kv('قيمة الضبط', '${money(r.total)} ل.س'),
+          Row(children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: const Icon(CupertinoIcons.doc_text,
+                  color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ملخص المحضر',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    r.status,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: .12)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'قيمة الضبط الإجمالية',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: .62),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${money(r.total)} ل.س',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 23,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 10),
+          _summaryRow('عدد المخالفات', '${r.items.length}'),
+          _summaryRow('غرامة التأخير',
+              lateCtl.text.trim().isEmpty ? '—' : '${lateCtl.text}%'),
+          _summaryRow('المنشأة', t?.name ?? '—'),
+          _summaryRow(
+              'المتبلغ', sName.text.trim().isEmpty ? '—' : sName.text.trim()),
+          const SizedBox(height: 14),
+          Divider(color: Colors.white.withValues(alpha: .14), height: 1),
+          const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: () => _preview(st),
-            icon: const Icon(CupertinoIcons.printer),
+            icon: const Icon(CupertinoIcons.printer, size: 18),
             label: const Text('معاينة وطباعة'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF0C352F),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => _save(st, submit: false),
-            icon: const Icon(CupertinoIcons.checkmark_alt),
+            icon: const Icon(CupertinoIcons.checkmark_alt, size: 18),
             label: const Text('حفظ كمسودة'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: .45)),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
           const SizedBox(height: 8),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => _save(st, submit: true),
-            child: const Text('إرسال للاعتماد'),
+            icon: const Icon(CupertinoIcons.paperplane, size: 18),
+            label: const Text('إرسال للاعتماد'),
+            style: FilledButton.styleFrom(
+              backgroundColor: kGold,
+              foregroundColor: const Color(0xFF3A2C05),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           TextButton(
             onPressed: () => context.go('/reports'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withValues(alpha: .75),
+            ),
             child: const Text('إلغاء'),
           ),
         ],
@@ -769,7 +1434,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       ),
       LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < 900) {
+          if (constraints.maxWidth < 1024) {
             return Column(children: [
               form,
               const SizedBox(height: 16),
@@ -778,8 +1443,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
           }
           return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: form),
-            const SizedBox(width: 16),
-            SizedBox(width: 270, child: summary),
+            const SizedBox(width: 20),
+            SizedBox(width: 300, child: summary),
           ]);
         },
       ),
