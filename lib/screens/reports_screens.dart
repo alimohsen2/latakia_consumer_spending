@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -252,6 +253,47 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     dirty = true;
     _collect();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _pickReportDate() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: r.date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (selected == null) return;
+    r.date = DateTime(
+      selected.year,
+      selected.month,
+      selected.day,
+      r.date.hour,
+      r.date.minute,
+    );
+    _touch();
+  }
+
+  Future<void> _pickReportTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(r.date),
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
+    );
+    if (selected == null) return;
+    r.date = DateTime(
+      r.date.year,
+      r.date.month,
+      r.date.day,
+      selected.hour,
+      selected.minute,
+    );
+    _touch();
   }
 
   Future<void> _pick(AppStore st) async {
@@ -718,6 +760,26 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
           },
         );
+    Widget reportDateTimeField({
+      required String label,
+      required String value,
+      required IconData icon,
+      required VoidCallback onTap,
+    }) =>
+        Expanded(
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: label,
+                suffixIcon: Icon(icon, size: 19),
+                fillColor: context.p.surfaceAlt,
+              ),
+              child: Text(value),
+            ),
+          ),
+        );
     final today = DateUtils.dateOnly(DateTime.now());
     final orderDateOptions = List.generate(4, (index) {
       final date = today.subtract(Duration(days: index));
@@ -887,9 +949,21 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   ctl: serial,
                   readOnly: auto,
                   onChanged: (_) => _touch()),
-              Field('التاريخ والساعة',
-                  ctl: TextEditingController(text: fmtDT(r.date)),
-                  readOnly: true),
+              reportDateTimeField(
+                label: 'التاريخ',
+                value: fmtDate(r.date),
+                icon: Icons.calendar_today_outlined,
+                onTap: _pickReportDate,
+              ),
+              reportDateTimeField(
+                label: 'الوقت',
+                value: fmtTime12(r.date),
+                icon: Icons.access_time,
+                onTap: _pickReportTime,
+              ),
+            ]),
+            const SizedBox(height: 10),
+            responsiveFieldRows([
               Field('رقم الأمر الإداري',
                   ctl: orderNo, onChanged: (_) => _touch()),
               Expanded(
@@ -1708,7 +1782,8 @@ class ReportViewScreen extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Column(children: [
-              kv('التاريخ والساعة', fmtDT(r.date)),
+              kv('التاريخ والساعة',
+                  '${fmtDate(r.date)} · ${fmtTime12(r.date)}'),
               kv('الأمر الإداري', '${r.orderNo} ${r.orderDate}'),
               kv('المنشأة', t?.name ?? ''),
               kv('العنوان', t?.address ?? ''),
@@ -2187,19 +2262,8 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
   final _transformation = TransformationController();
   final _focusNode = FocusNode(debugLabel: 'report-preview');
   int _pageIndex = 0;
-  double _zoom = 1;
   Size _viewport = Size.zero;
-  _PreviewFitMode _fitMode = _PreviewFitMode.page;
-  bool _applyingZoom = false;
-
-  static const double _minZoom = .4;
-  static const double _maxZoom = 4.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _transformation.addListener(_onTransformation);
-  }
+  _PreviewFitMode _fitMode = _PreviewFitMode.width;
 
   @override
   void didUpdateWidget(covariant _ReportPdfPageViewer oldWidget) {
@@ -2212,20 +2276,9 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
 
   @override
   void dispose() {
-    _transformation.removeListener(_onTransformation);
     _transformation.dispose();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  void _onTransformation() {
-    if (_applyingZoom) return;
-    final scale = _transformation.value.getMaxScaleOnAxis();
-    if ((scale - _zoom).abs() > .005 &&
-        scale >= _minZoom &&
-        scale <= _maxZoom) {
-      setState(() => _zoom = scale);
-    }
   }
 
   Size _baseSize(Size viewport, PdfPreviewPageData page) {
@@ -2240,7 +2293,7 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
       width = math.min(availableWidth, availableHeight * aspect);
       height = width / aspect;
     } else {
-      width = availableWidth;
+      width = math.min(availableWidth, 960.0);
       height = width / aspect;
     }
     return Size(width, height);
@@ -2251,25 +2304,13 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
         math.max(viewport.height, base.height),
       );
 
-  void _applyZoom(double value) {
-    if (widget.pages.isEmpty || _viewport == Size.zero) return;
-    final z = value.clamp(_minZoom, _maxZoom).toDouble();
-    final page = widget.pages[_pageIndex.clamp(0, widget.pages.length - 1)];
-    final base = _baseSize(_viewport, page);
-    final child = _childSize(_viewport, base);
-    final dx = (_viewport.width - child.width * z) / 2;
-    final dy = (_viewport.height - child.height * z) / 2;
-    _applyingZoom = true;
-    _transformation.value = Matrix4.identity()
-      ..translateByDouble(dx, dy, 0, 1)
-      ..scaleByDouble(z, z, 1, 1);
-    _applyingZoom = false;
-    setState(() => _zoom = z);
+  void _resetPosition() {
+    _transformation.value = Matrix4.identity();
   }
 
   void _scheduleReset() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _applyZoom(1);
+      if (mounted) _resetPosition();
     });
   }
 
@@ -2290,22 +2331,239 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
     _scheduleReset();
   }
 
-  void _zoomBy(double delta) => _applyZoom(_zoom + delta);
+  void _panBy(double dx, double dy) {
+    if (widget.pages.isEmpty || _viewport == Size.zero) return;
+    final idx = _pageIndex.clamp(0, widget.pages.length - 1);
+    final page = widget.pages[idx];
+    final base = _baseSize(_viewport, page);
+    final child = _childSize(_viewport, base);
+    final m = _transformation.value;
+    final curX = m[12];
+    final curY = m[13];
+    final minX = math.min(0, _viewport.width - child.width);
+    final maxX = math.max(0, _viewport.width - child.width);
+    final minY = math.min(0, _viewport.height - child.height);
+    final maxY = math.max(0, _viewport.height - child.height);
+    final nextX = (curX - dx).clamp(minX, maxX).toDouble();
+    final nextY = (curY - dy).clamp(minY, maxY).toDouble();
+    _transformation.value = Matrix4.identity()
+      ..translateByDouble(nextX, nextY, 0, 1)
+      ..scaleByDouble(1, 1, 1, 1);
+    if (mounted) setState(() {});
+  }
+
+  double _rulerFractionY(Size viewport, Size child) {
+    final displayH = child.height;
+    if (displayH <= viewport.height) return 0;
+    final curY = _transformation.value[13];
+    final total = displayH - viewport.height;
+    final scrolled = (-curY).clamp(0, total);
+    return total == 0 ? 0 : (scrolled / total).toDouble();
+  }
+
+  double _rulerFractionX(Size viewport, Size child) {
+    final displayW = child.width;
+    if (displayW <= viewport.width) return 0;
+    final curX = _transformation.value[12];
+    final total = displayW - viewport.width;
+    final scrolled = (-curX).clamp(0, total);
+    return total == 0 ? 0 : (scrolled / total).toDouble();
+  }
+
+  void _setScrollFraction({
+    required double fraction,
+    required Size viewport,
+    required Size child,
+    required bool vertical,
+  }) {
+    final matrix = _transformation.value;
+    final total = vertical
+        ? child.height - viewport.height
+        : child.width - viewport.width;
+    final position =
+        total <= 0 ? 0.0 : -total * fraction.clamp(0.0, 1.0).toDouble();
+    final x = vertical ? matrix[12] : position;
+    final y = vertical ? position : matrix[13];
+    _transformation.value = Matrix4.identity()
+      ..translateByDouble(x, y, 0, 1)
+      ..scaleByDouble(1, 1, 1, 1);
+    if (mounted) setState(() {});
+  }
+
+  Widget _buildVerticalRuler(Size viewport, Size child) {
+    return Positioned(
+      right: 8,
+      top: 12,
+      bottom: 12,
+      width: 14,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final trackHeight = constraints.maxHeight;
+          final contentHeight = child.height;
+          final canScroll = contentHeight > viewport.height;
+          final minimumThumbHeight = math.min(48.0, trackHeight).toDouble();
+          final thumbHeight = !canScroll
+              ? trackHeight
+              : (trackHeight * viewport.height / contentHeight)
+                  .clamp(minimumThumbHeight, trackHeight)
+                  .toDouble();
+          final travel = math.max(0.0, trackHeight - thumbHeight);
+          final fraction = _rulerFractionY(viewport, child);
+
+          double fractionFor(double pointerY) {
+            if (travel == 0) return 0;
+            return ((pointerY - thumbHeight / 2) / travel)
+                .clamp(0.0, 1.0)
+                .toDouble();
+          }
+
+          return Tooltip(
+            message: 'اسحب للتمرير عمودياً',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) => _setScrollFraction(
+                fraction: fractionFor(details.localPosition.dy),
+                viewport: viewport,
+                child: child,
+                vertical: true,
+              ),
+              onVerticalDragUpdate: (details) => _setScrollFraction(
+                fraction: fractionFor(details.localPosition.dy),
+                viewport: viewport,
+                child: child,
+                vertical: true,
+              ),
+              child: Stack(
+                alignment: AlignmentDirectional.center,
+                children: [
+                  Container(
+                    width: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .13),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  Positioned(
+                    top: travel * fraction,
+                    child: Container(
+                      width: 10,
+                      height: thumbHeight,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: canScroll
+                              ? [_previewGoldLight, const Color(0xFFA98545)]
+                              : [
+                                  Colors.white.withValues(alpha: .12),
+                                  Colors.white.withValues(alpha: .08),
+                                ],
+                          begin: AlignmentDirectional.topStart,
+                          end: AlignmentDirectional.bottomEnd,
+                        ),
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .4),
+                          width: .7,
+                        ),
+                        boxShadow: canScroll
+                            ? [
+                                BoxShadow(
+                                  color: kGold.withValues(alpha: .32),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHorizontalRuler(Size viewport, Size child) {
+    final contentWidth = child.width;
+    if (contentWidth <= viewport.width) return const SizedBox.shrink();
+    return Positioned(
+      left: 18,
+      right: 38,
+      bottom: 8,
+      height: 12,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final trackWidth = constraints.maxWidth;
+          final minimumThumbWidth = math.min(48.0, trackWidth).toDouble();
+          final thumbWidth = (trackWidth * viewport.width / contentWidth)
+              .clamp(minimumThumbWidth, trackWidth)
+              .toDouble();
+          final travel = math.max(0.0, trackWidth - thumbWidth);
+          final fraction = _rulerFractionX(viewport, child);
+
+          double fractionFor(double pointerX) {
+            if (travel == 0) return 0;
+            return ((pointerX - thumbWidth / 2) / travel)
+                .clamp(0.0, 1.0)
+                .toDouble();
+          }
+
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) => _setScrollFraction(
+                fraction: fractionFor(details.localPosition.dx),
+                viewport: viewport,
+                child: child,
+                vertical: false,
+              ),
+              onHorizontalDragUpdate: (details) => _setScrollFraction(
+                fraction: fractionFor(details.localPosition.dx),
+                viewport: viewport,
+                child: child,
+                vertical: false,
+              ),
+              child: Stack(
+                alignment: AlignmentDirectional.center,
+                children: [
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .13),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  Positioned(
+                    left: travel * fraction,
+                    child: Container(
+                      width: thumbWidth,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: _previewGoldLight,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: .4),
+                          width: .7,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.escape) {
       Navigator.of(context).maybePop();
-      return KeyEventResult.handled;
-    }
-    final character = event.character;
-    if (character == '+' || character == '=') {
-      _zoomBy(.2);
-      return KeyEventResult.handled;
-    }
-    if (character == '-') {
-      _zoomBy(-.2);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
@@ -2354,7 +2612,7 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
                 final child = _childSize(viewport, base);
                 if (changed) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) _applyZoom(_zoom);
+                    if (mounted) _resetPosition();
                   });
                 }
                 return Stack(
@@ -2370,25 +2628,39 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
                       ),
                     ),
                     Positioned.fill(
-                      child: InteractiveViewer(
-                        transformationController: _transformation,
-                        constrained: false,
-                        minScale: _minZoom,
-                        maxScale: _maxZoom,
-                        boundaryMargin: const EdgeInsets.all(280),
-                        child: SizedBox(
-                          width: child.width,
-                          height: child.height,
-                          child: Center(
-                            child: SizedBox(
-                              width: base.width,
-                              height: base.height,
-                              child: _pageCard(page),
+                      child: Listener(
+                        onPointerSignal: (event) {
+                          if (event is PointerScrollEvent) {
+                            final e = event;
+                            if (e.kind == PointerDeviceKind.mouse ||
+                                e.kind == PointerDeviceKind.trackpad) {
+                              _panBy(e.scrollDelta.dx, e.scrollDelta.dy);
+                            }
+                          }
+                        },
+                        child: InteractiveViewer(
+                          transformationController: _transformation,
+                          constrained: false,
+                          trackpadScrollCausesScale: false,
+                          minScale: 1,
+                          maxScale: 1,
+                          boundaryMargin: EdgeInsets.zero,
+                          child: SizedBox(
+                            width: child.width,
+                            height: child.height,
+                            child: Center(
+                              child: SizedBox(
+                                width: base.width,
+                                height: base.height,
+                                child: _pageCard(page),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
+                    _buildVerticalRuler(viewport, child),
+                    _buildHorizontalRuler(viewport, child),
                   ],
                 );
               },
@@ -2427,6 +2699,7 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
   Widget _buildToolbar(BuildContext context) {
     final hasPages = widget.pages.length > 1;
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
         color: _previewPanel,
         border: Border(
@@ -2459,40 +2732,6 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
                 ),
                 _toolDivider(),
               ],
-              _toolIcon(
-                icon: Icons.zoom_out,
-                tooltip: 'تصغير (-)',
-                onTap: _zoom > _minZoom ? () => _zoomBy(-.2) : null,
-              ),
-              SizedBox(
-                width: compact ? 110 : 150,
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: kGold,
-                    inactiveTrackColor: Colors.white.withValues(alpha: .14),
-                    thumbColor: _previewGoldLight,
-                    overlayColor: kGold.withValues(alpha: .18),
-                    trackHeight: 3,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 7),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 14),
-                  ),
-                  child: Slider(
-                    min: _minZoom,
-                    max: _maxZoom,
-                    value: _zoom.clamp(_minZoom, _maxZoom),
-                    onChanged: _applyZoom,
-                  ),
-                ),
-              ),
-              _toolIcon(
-                icon: Icons.zoom_in,
-                tooltip: 'تكبير (+)',
-                onTap: _zoom < _maxZoom ? () => _zoomBy(.2) : null,
-              ),
-              _pill('${(_zoom * 100).round()}%'),
-              _toolDivider(),
               _fitButton(
                 icon: Icons.fit_screen,
                 label: 'ملاءمة الصفحة',
@@ -2507,16 +2746,6 @@ class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
                 compact: compact,
                 onTap: () => _setFitMode(_PreviewFitMode.width),
               ),
-              if (!compact) ...[
-                _toolDivider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(
-                    'Esc إغلاق · + / - تكبير · 0 صفحة · W عرض',
-                    style: TextStyle(color: _previewMuted, fontSize: 10.5),
-                  ),
-                ),
-              ],
             ],
           );
         },

@@ -17,7 +17,7 @@ List<String> _splitInspectors(String raw) => raw
 /// يبني محضر الضبط بصيغة PDF وفق النموذج الورقي المعتمد.
 ///
 /// المحضر يُخرج دائماً في صفحة واحدة: يُبنى المحتوى بارتفاعه الطبيعي ثم
-/// يُوضع داخل [pw.FittedBox]، فإن تجاوز ارتفاع A4 صُغّر بنسبة تحافظ على
+/// يُوضع داخل [pw.FittedBox]، فإن تجاوز مساحة النموذج صُغّر بنسبة تحافظ على
 /// وضوحه، وإن كان أقصر بقي بحجمه الطبيعي دون تكبير.
 Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   final font = pw.Font.ttf(
@@ -36,13 +36,14 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   );
 
   const blank = '..........';
-  const grey = PdfColor.fromInt(0xFF8E9995);
+  const grey = PdfColor.fromInt(0xFF555555);
   const rule = PdfColor.fromInt(0xFFB9C2BE);
+  const violationRule = PdfColor.fromInt(0xFF555555);
 
   String value(String? v) => (v == null || v.trim().isEmpty) ? blank : v.trim();
 
   final dateParts = fmtDate(r.date).split('/');
-  final time = fmtDT(r.date).split(' ').last;
+  final time = fmtTime12(r.date);
   const weekdays = [
     'الأحد',
     'الإثنين',
@@ -52,7 +53,6 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
     'الجمعة',
     'السبت',
   ];
-  final dayPeriod = r.date.hour < 12 ? 'صباحاً' : 'مساءً';
   final weekday = weekdays[r.date.weekday % 7];
 
   final taxpayerName = value(t?.name);
@@ -63,18 +63,14 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   // ---- أحجام متكيّفة مع عدد المخالفات وعدد المراقبين ----
   final violationCount = math.max(r.items.length, 13);
   final violationRowHeight = violationCount <= 13
-      ? 19.0
+      ? 20.0
       : violationCount <= 18
           ? 16.0
           : 13.5;
 
   final inspectorNames = _splitInspectors(r.inspectors);
   final inspectorSlots = math.max(inspectorNames.length, 2);
-  final inspectorColumns = inspectorSlots <= 4
-      ? 2
-      : inspectorSlots <= 9
-          ? 3
-          : 4;
+  const inspectorColumns = 2;
   final inspectorRows = (inspectorSlots / inspectorColumns).ceil();
   final inspectorCellHeight = inspectorRows <= 1
       ? 58.0
@@ -86,37 +82,28 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   const authorityRowHeight = 58.0;
 
   // ---- أنماط النص ----
-  final body = pw.TextStyle(font: font, fontSize: 9.4, lineSpacing: 2.2);
-  final bodyBold = pw.TextStyle(font: bold, fontSize: 9.4, lineSpacing: 2.2);
-  final small = pw.TextStyle(font: font, fontSize: 8.2, lineSpacing: 1.4);
-  final smallBold = pw.TextStyle(font: bold, fontSize: 8.2, lineSpacing: 1.4);
-  final tiny = pw.TextStyle(font: font, fontSize: 7.2, lineSpacing: 1.2);
-  final tinyBold = pw.TextStyle(font: bold, fontSize: 7.2, lineSpacing: 1.2);
+  final body = pw.TextStyle(font: font, fontSize: 12, lineSpacing: 6);
+  final headerStyle = pw.TextStyle(font: bold, fontSize: 12, lineSpacing: 1.5);
+  final dateStyle = pw.TextStyle(font: font, fontSize: 12, lineSpacing: 3);
+  final signatureStyle = pw.TextStyle(font: bold, fontSize: 12, lineSpacing: 3);
+  final smallBold = pw.TextStyle(font: bold, fontSize: 10.5, lineSpacing: 1.4);
+  final tiny = pw.TextStyle(font: font, fontSize: 9, lineSpacing: 1.2);
+  final footerNote = pw.TextStyle(font: bold, fontSize: 10, lineSpacing: 5);
+  final servedStyle = pw.TextStyle(font: bold, fontSize: 12, lineSpacing: 3);
+  final violationText = pw.TextStyle(font: font, fontSize: 10, lineSpacing: 1);
+  final violationAmount =
+      pw.TextStyle(font: bold, fontSize: 10, lineSpacing: 1);
 
   // ---- الترويسة ----
   final header = pw.Table(
     columnWidths: {
-      0: const pw.FlexColumnWidth(2),
-      1: const pw.FlexColumnWidth(1),
+      0: const pw.FlexColumnWidth(1),
+      1: const pw.FlexColumnWidth(2),
     },
     children: [
       pw.TableRow(
         verticalAlignment: pw.TableCellVerticalAlignment.top,
         children: [
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              for (final line in const [
-                'الجمهورية العربية السورية',
-                'وزارة المالية',
-                'الهيئة العامة للضرائب والرسوم',
-                'مديرية مالية ..........',
-                'قسم الواردات',
-                'دائرة الإنفاق الاستهلاكي',
-              ])
-                pw.Text(line, style: bodyBold),
-            ],
-          ),
           pw.Padding(
             padding: const pw.EdgeInsetsDirectional.only(start: 4),
             child: pw.Column(
@@ -124,10 +111,27 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
               children: [
                 pw.Text(
                   'رقم  ${r.serial.trim().isEmpty ? blank : r.serial.trim()}',
-                  style: bodyBold,
+                  style: headerStyle,
                 ),
                 pw.SizedBox(height: 2),
                 pw.Container(width: 74, height: .7, color: rule),
+              ],
+            ),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 10),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                for (final line in const [
+                  'الجمهورية العربية السورية',
+                  'وزارة المالية',
+                  'الهيئة العامة للضرائب والرسوم',
+                  'مديرية مالية ..........',
+                  'قسم الواردات',
+                  'دائرة الإنفاق الاستهلاكي',
+                ])
+                  pw.Text(line, style: headerStyle),
               ],
             ),
           ),
@@ -158,7 +162,7 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
                 pw.Expanded(
                   child: pw.Text(
                     item!.type,
-                    style: small,
+                    style: violationText,
                     maxLines: 2,
                   ),
                 ),
@@ -175,7 +179,7 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
                   width: 74,
                   child: pw.Text(
                     '${money(item.fine)} ل.س',
-                    style: smallBold,
+                    style: violationAmount,
                     textAlign: pw.TextAlign.center,
                   ),
                 ),
@@ -188,8 +192,16 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   final violationsTable = pw.Table(
     columnWidths: {0: const pw.FlexColumnWidth(1)},
     border: pw.TableBorder(
-      bottom: pw.BorderSide(width: .6, color: rule),
-      horizontalInside: pw.BorderSide(width: .5, color: rule),
+      bottom: const pw.BorderSide(
+        width: .6,
+        color: violationRule,
+        style: pw.BorderStyle.dotted,
+      ),
+      horizontalInside: const pw.BorderSide(
+        width: .6,
+        color: violationRule,
+        style: pw.BorderStyle.dotted,
+      ),
     ),
     children: [
       for (var i = 0; i < violationCount; i++)
@@ -215,9 +227,13 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          pw.Text(title, style: tinyBold, textAlign: pw.TextAlign.center),
+          pw.Text(title, style: signatureStyle, textAlign: pw.TextAlign.center),
           if (caption != null)
-            pw.Text(caption, style: tiny, textAlign: pw.TextAlign.center),
+            pw.Text(
+              caption,
+              style: signatureStyle,
+              textAlign: pw.TextAlign.center,
+            ),
           if (hasName) ...[
             pw.SizedBox(height: 1),
             pw.Text(
@@ -264,7 +280,10 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
   final signatureBlock = pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.stretch,
     children: [
-      inspectorGrid(),
+      pw.Align(
+        alignment: pw.AlignmentDirectional.center,
+        child: pw.SizedBox(width: 275, child: inspectorGrid()),
+      ),
       pw.SizedBox(height: 2),
       pw.Table(
         columnWidths: {
@@ -275,14 +294,14 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
           pw.TableRow(
             children: [
               signatureCell(
-                title: 'رئيس الشعبة الميدانية وتوقيعه',
-                name: r.fieldHead,
-                height: authorityRowHeight,
-              ),
-              signatureCell(
                 title: 'مصدّق',
                 caption: 'رئيس دائرة الإنفاق الاستهلاكي',
                 name: r.deptHead,
+                height: authorityRowHeight,
+              ),
+              signatureCell(
+                title: 'رئيس الشعبة الميدانية وتوقيعه',
+                name: r.fieldHead,
                 height: authorityRowHeight,
               ),
             ],
@@ -292,26 +311,34 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
     ],
   );
 
-  final servedBlock = pw.Padding(
-    padding: const pw.EdgeInsetsDirectional.only(start: 2, end: 12, top: 2),
+  final servedBlock = pw.Container(
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(width: 1, color: PdfColors.black),
+    ),
+    padding: const pw.EdgeInsetsDirectional.only(
+      start: 16,
+      end: 24,
+      top: 16,
+      bottom: 16,
+    ),
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('المتبلغ : ${value(r.servedName)}', style: smallBold),
-        pw.SizedBox(height: 3),
-        pw.Text('الصفة : ${value(r.servedCapacity)}', style: smallBold),
-        pw.SizedBox(height: 3),
+        pw.Text('المتبلغ : ${value(r.servedName)}', style: servedStyle),
+        pw.SizedBox(height: 6),
+        pw.Text('الصفة : ${value(r.servedCapacity)}', style: servedStyle),
+        pw.SizedBox(height: 6),
         pw.Text(
           'الأب : ${value(r.servedFather)}   الأم : ${value(r.servedMother)}',
-          style: smallBold,
+          style: servedStyle,
         ),
-        pw.SizedBox(height: 3),
+        pw.SizedBox(height: 6),
         pw.Text(
           'الرقم الوطني / ${value(r.servedNationalNo)}',
-          style: smallBold,
+          style: servedStyle,
         ),
-        pw.SizedBox(height: 10),
-        pw.Text('التوقيع :', style: smallBold),
+        pw.SizedBox(height: 6),
+        pw.Text('التوقيع :', style: servedStyle),
         pw.SizedBox(height: 28),
       ],
     ),
@@ -319,24 +346,25 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
 
   final servedAndSignatures = pw.Table(
     columnWidths: {
-      0: const pw.FlexColumnWidth(42),
-      1: const pw.FlexColumnWidth(58),
+      0: const pw.FlexColumnWidth(58),
+      1: const pw.FlexColumnWidth(42),
     },
     children: [
       pw.TableRow(
         verticalAlignment: pw.TableCellVerticalAlignment.top,
-        children: [servedBlock, signatureBlock],
+        children: [signatureBlock, servedBlock],
       ),
     ],
   );
 
-  const pageMargin = pw.EdgeInsets.fromLTRB(38, 30, 38, 24);
+  const reportPageFormat = PdfPageFormat(595.3, 841.9);
+  const pageMargin = pw.EdgeInsets.fromLTRB(50, 35, 50, 30);
   final contentWidth =
-      PdfPageFormat.a4.width - pageMargin.left - pageMargin.right;
+      reportPageFormat.width - pageMargin.left - pageMargin.right;
 
   doc.addPage(
     pw.Page(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: reportPageFormat,
       margin: pageMargin,
       textDirection: pw.TextDirection.rtl,
       theme: theme,
@@ -345,77 +373,74 @@ Future<Uint8List> buildReportPdf(Report r, Taxpayer? t) async {
         alignment: pw.Alignment.topCenter,
         child: pw.SizedBox(
           width: contentWidth,
-          child: pw.Column(
-            mainAxisSize: pw.MainAxisSize.min,
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              header,
-              pw.SizedBox(height: 8),
-              pw.Center(
-                child: pw.Text(
-                  'محضر ضبط مخالفة المرسوم التشريعي رقم /11/ لعام 2015',
-                  style: pw.TextStyle(
-                    font: bold,
-                    fontSize: 13.2,
-                    lineSpacing: 1,
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.only(right: 12),
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                header,
+                pw.SizedBox(height: 12),
+                pw.Center(
+                  child: pw.Text(
+                    'محضر ضبط مخالفة المرسوم التشريعي رقم /11/ لعام 2015',
+                    style: pw.TextStyle(
+                      font: bold,
+                      fontSize: 13.2,
+                      lineSpacing: 1,
+                    ),
                   ),
                 ),
-              ),
-              pw.SizedBox(height: 4),
-              pw.Container(height: .8, color: rule),
-              pw.SizedBox(height: 5),
-              pw.Text(
-                'في تمام الساعة $time من $dayPeriod يوم $weekday الواقع في '
-                '${dateParts[2]} من شهر ${dateParts[1]} لعام ${dateParts[0]}',
-                style: body,
-              ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'نحن الموقعون أدناه العاملون في دائرة الإنفاق الاستهلاكي لدى مديرية مالية محافظة .......... '
-                'بناء على الأمر الإداري رقم ${value(r.orderNo)} تاريخ ${value(r.orderDate)} '
-                'الصادر عن السيد مدير المالية وأثناء جولتنا الميدانية لمراقبة تنفيذ أحكام '
-                'المرسوم التشريعي رقم /11/ لعام 2015 م لدى منشأة $taxpayerName الكائنة في '
-                '$taxpayerAddress المسجلة باسم السيد $taxpayerOwner والذي يمارس مهنة '
-                '$taxpayerProfession وبنتيجة تدقيق الفواتير والسجلات العائدة للمومأ إليه وحساب الرسم تبين ما يلي:',
-                style: body,
-                textAlign: pw.TextAlign.justify,
-              ),
-              pw.SizedBox(height: 6),
-              violationsTable,
-              if (r.items.isNotEmpty) ...[
-                pw.SizedBox(height: 2),
-                pw.Align(
-                  alignment: pw.AlignmentDirectional.centerStart,
-                  child: pw.Text(
-                    'إجمالي قيمة الضبط: ${money(r.total)} ل.س',
-                    style: smallBold,
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'في تمام الساعة $time يوم $weekday الواقع في '
+                  '${dateParts[2]} من شهر ${dateParts[1]} لعام ${dateParts[0]}',
+                  style: dateStyle,
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  'نحن الموقعون أدناه العاملون في دائرة الإنفاق الاستهلاكي لدى مديرية مالية محافظة .......... '
+                  'بناء على الأمر الإداري رقم ${value(r.orderNo)} تاريخ ${value(r.orderDate)} '
+                  'الصادر عن السيد مدير المالية وأثناء جولتنا الميدانية لمراقبة تنفيذ أحكام '
+                  'المرسوم التشريعي رقم /11/ لعام 2015 م لدى منشأة $taxpayerName الكائنة في '
+                  '$taxpayerAddress المسجلة باسم السيد $taxpayerOwner والذي يمارس مهنة '
+                  '$taxpayerProfession وبنتيجة تدقيق الفواتير والسجلات العائدة للمومأ إليه وحساب الرسم تبين ما يلي:',
+                  style: body,
+                  textAlign: pw.TextAlign.justify,
+                ),
+                pw.SizedBox(height: 3),
+                violationsTable,
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'تلي المحضر على السيد ${value(r.servedName)} بصفته ${value(r.servedCapacity)} '
+                  'للمنشأة المذكورة فتفهم وأقر بما ورد فيه وبناءً عليه تم ختم المحضر أصولاً '
+                  'في تمام الساعة .......... من يوم .......... الواقع في .......... من شهر .......... لعام ..........',
+                  style: body,
+                  textAlign: pw.TextAlign.justify,
+                ),
+                pw.SizedBox(height: 8),
+                servedAndSignatures,
+                pw.SizedBox(height: 8),
+                pw.Container(
+                  padding: const pw.EdgeInsets.only(bottom: 2),
+                  decoration: const pw.BoxDecoration(
+                    border: pw.Border(
+                      bottom: pw.BorderSide(width: 1, color: PdfColors.black),
+                    ),
                   ),
+                  child: pw.Text(
+                    'يحق للمكلف الاعتراض على الضبط خلال سبعة أيام من التاريخ الذي يلي تاريخ تبلغه الضبط',
+                    style: signatureStyle,
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  'ينظم المحضر على ثلاث نسخ، الأولى للدوائر المالية ترفق مع تقرير الجولة الميدانية '
+                  'والثانية للمكلف والثالثة تعتبر أرومة.',
+                  style: footerNote,
                 ),
               ],
-              pw.SizedBox(height: 7),
-              pw.Text(
-                'تلي المحضر على السيد ${value(r.servedName)} بصفته ${value(r.servedCapacity)} '
-                'للمنشأة المذكورة فتفهم وأقر بما ورد فيه وبناءً عليه تم ختم المحضر أصولاً '
-                'في تمام الساعة .......... من يوم .......... الواقع في .......... من شهر .......... لعام ..........',
-                style: body,
-                textAlign: pw.TextAlign.justify,
-              ),
-              pw.SizedBox(height: 8),
-              servedAndSignatures,
-              pw.SizedBox(height: 8),
-              pw.Container(height: .8, color: rule),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'يحق للمكلف الاعتراض على الضبط خلال سبعة أيام من التاريخ الذي يلي تاريخ تبلغه الضبط',
-                style: smallBold,
-              ),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                'ينظم المحضر على ثلاث نسخ، الأولى للدوائر المالية ترفق مع تقرير الجولة الميدانية '
-                'والثانية للمكلف والثالثة تعتبر أرومة.',
-                style: tiny,
-              ),
-            ],
+            ),
           ),
         ),
       ),
