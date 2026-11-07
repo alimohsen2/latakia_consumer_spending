@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -22,6 +23,17 @@ const kReportStatuses = [
   'مقفل',
   'ملغى'
 ];
+
+/// سطر وصفي قصير يظهر أعلى نافذة معاينة المحضر.
+String _previewSubtitle(Report r, Taxpayer? t) {
+  final name = t?.name.trim() ?? '';
+  final division = kDivisions[r.division] ?? '';
+  return [
+    if (r.serial.trim().isNotEmpty) 'رقم المحضر ${r.serial.trim()}',
+    if (name.isNotEmpty) name,
+    if (division.isNotEmpty) division,
+  ].join(' · ');
+}
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -377,12 +389,15 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   Future<void> _preview(AppStore st) async {
     _collect();
     try {
-      final bytes = await buildReportPdf(r, st.tp(r.taxpayerId));
+      final t = st.tp(r.taxpayerId);
+      final bytes = await buildReportPdf(r, t);
       if (!mounted) return;
       await showDialog<void>(
         context: context,
         builder: (ctx) => _ReportPreviewDialog(
           serial: r.serial,
+          title: 'محضر ضبط مخالفة',
+          subtitle: _previewSubtitle(r, t),
           bytes: bytes,
           allowPrinting: true,
         ),
@@ -1458,13 +1473,17 @@ class ReportViewScreen extends StatelessWidget {
 
   Future<void> _preview(BuildContext context, AppStore st, Report r) async {
     try {
-      final bytes = await buildReportPdf(r, st.tp(r.taxpayerId));
+      final t = st.tp(r.taxpayerId);
+      final bytes = await buildReportPdf(r, t);
       if (!context.mounted) return;
       await showDialog<void>(
         context: context,
         builder: (ctx) => _ReportPreviewDialog(
           serial: r.serial,
+          title: 'محضر ضبط مخالفة',
+          subtitle: _previewSubtitle(r, t),
           bytes: bytes,
+          allowPrinting: true,
         ),
       );
     } catch (error) {
@@ -1687,58 +1706,414 @@ class ReportViewScreen extends StatelessWidget {
   }
 }
 
+// ألوان نافذة المعاينة: أخضر مزرق داكن مع لمسات ذهبية.
+const _previewBg = Color(0xFF071714);
+const _previewPanel = Color(0xFF0C221E);
+const _previewText = Color(0xFFF2F7F5);
+const _previewMuted = Color(0xFF9FB8B2);
+const _previewGoldLight = Color(0xFFD8B97B);
+
+enum _PreviewFitMode { page, width }
+
 class _ReportPreviewDialog extends StatelessWidget {
   final String serial;
+  final String title;
+  final String subtitle;
   final Uint8List bytes;
   final bool allowPrinting;
 
   const _ReportPreviewDialog({
     required this.serial,
     required this.bytes,
+    this.title = 'محضر ضبط مخالفة',
+    this.subtitle = '',
     this.allowPrinting = false,
   });
 
+  String get _fileName =>
+      'محضر-${serial.trim().isEmpty ? 'بدون-رقم' : serial.trim()}.pdf';
+
+  String get _displaySubtitle {
+    if (subtitle.trim().isNotEmpty) return subtitle.trim();
+    return serial.trim().isEmpty
+        ? 'معاينة المحضر قبل الطباعة'
+        : 'رقم المحضر ${serial.trim()}';
+  }
+
   Future<void> _print(BuildContext context) async {
     try {
-      await printReportPdf(bytes, 'محضر-$serial.pdf');
+      await printReportPdf(bytes, _fileName);
     } catch (error) {
       if (context.mounted) toast(context, 'تعذرت طباعة المحضر: $error');
     }
   }
 
+  Future<void> _save(BuildContext context) async {
+    try {
+      final saved = await saveAttachmentFile(_fileName, bytes);
+      if (saved && context.mounted) toast(context, 'تم حفظ المحضر بصيغة PDF');
+    } catch (error) {
+      if (context.mounted) toast(context, 'تعذر حفظ المحضر: $error');
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Dialog.fullscreen(
+  Widget build(BuildContext context) {
+    return Focus(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.of(context).maybePop();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Dialog.fullscreen(
+        backgroundColor: _previewBg,
         child: Scaffold(
-          appBar: AppBar(
-            title: Text('معاينة المحضر $serial'),
-            actions: [
-              if (allowPrinting)
-                IconButton(
-                  tooltip: 'طباعة المحضر',
-                  onPressed: () => _print(context),
-                  icon: const Icon(CupertinoIcons.printer),
+          backgroundColor: _previewBg,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _PreviewTopBar(
+                  title: title,
+                  subtitle: _displaySubtitle,
+                  onClose: () => Navigator.of(context).pop(),
+                  onSave: () => _save(context),
+                  onPrint: allowPrinting ? () => _print(context) : null,
                 ),
-            ],
-            leading: IconButton(
-              tooltip: 'إغلاق المعاينة',
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(CupertinoIcons.xmark),
+                Expanded(
+                  child: PdfPreview.builder(
+                    build: (_) async => bytes,
+                    pdfFileName: _fileName,
+                    canChangeOrientation: false,
+                    canChangePageFormat: false,
+                    allowPrinting: false,
+                    allowSharing: false,
+                    useActions: false,
+                    canDebug: false,
+                    padding: EdgeInsets.zero,
+                    loadingWidget: const _PreviewLoading(),
+                    onError: (context, error) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'تعذر عرض المعاينة: $error',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _previewMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                    pagesBuilder: (context, pages) =>
+                        _ReportPdfPageViewer(pages: pages),
+                  ),
+                ),
+              ],
             ),
           ),
-          body: PdfPreview.builder(
-            build: (_) async => bytes,
-            pdfFileName: 'محضر-$serial.pdf',
-            canChangeOrientation: false,
-            canChangePageFormat: false,
-            allowPrinting: allowPrinting,
-            allowSharing: false,
-            useActions: false,
-            padding: EdgeInsets.zero,
-            pagesBuilder: (context, pages) =>
-                _ReportPdfPageViewer(pages: pages),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewTopBar extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onClose;
+  final VoidCallback onSave;
+  final VoidCallback? onPrint;
+
+  const _PreviewTopBar({
+    required this.title,
+    required this.subtitle,
+    required this.onClose,
+    required this.onSave,
+    this.onPrint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0A241F), Color(0xFF145046)],
+          begin: AlignmentDirectional.centerStart,
+          end: AlignmentDirectional.centerEnd,
+        ),
+        border: const Border(
+          bottom: BorderSide(color: Color(0x55A98545)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .35),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 11, 14, 11),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 720;
+          return Row(
+            children: [
+              _PreviewIconButton(
+                icon: CupertinoIcons.xmark,
+                tooltip: 'إغلاق المعاينة (Esc)',
+                onTap: onClose,
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0x33A98545), Color(0x11A98545)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0x88A98545)),
+                ),
+                child: const Icon(
+                  CupertinoIcons.doc_text,
+                  color: _previewGoldLight,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _previewText,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: .2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _previewMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              if (compact) ...[
+                _PreviewIconButton(
+                  icon: CupertinoIcons.arrow_down_doc,
+                  tooltip: 'حفظ نسخة PDF',
+                  onTap: onSave,
+                ),
+                if (onPrint != null) ...[
+                  const SizedBox(width: 6),
+                  _PreviewIconButton(
+                    icon: CupertinoIcons.printer,
+                    tooltip: 'طباعة المحضر',
+                    onTap: onPrint!,
+                    highlight: true,
+                  ),
+                ],
+              ] else ...[
+                _PreviewTextButton(
+                  icon: CupertinoIcons.arrow_down_doc,
+                  label: 'حفظ PDF',
+                  onTap: onSave,
+                ),
+                if (onPrint != null) ...[
+                  const SizedBox(width: 8),
+                  _PreviewPrimaryButton(
+                    icon: CupertinoIcons.printer,
+                    label: 'طباعة المحضر',
+                    onTap: onPrint!,
+                  ),
+                ],
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PreviewIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool highlight;
+
+  const _PreviewIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: highlight
+            ? kGold.withValues(alpha: .18)
+            : Colors.white.withValues(alpha: .06),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(11),
+          side: BorderSide(
+            color: highlight
+                ? kGold.withValues(alpha: .62)
+                : Colors.white.withValues(alpha: .12),
           ),
         ),
-      );
+        child: InkWell(
+          borderRadius: BorderRadius.circular(11),
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              icon,
+              size: 18,
+              color: highlight ? _previewGoldLight : _previewText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewTextButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PreviewTextButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: .05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(11),
+        side: BorderSide(color: Colors.white.withValues(alpha: .14)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(11),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17, color: _previewText),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: _previewText,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewPrimaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PreviewPrimaryButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: kGold,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(11),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17, color: const Color(0xFF0B211D)),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF0B211D),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewLoading extends StatelessWidget {
+  const _PreviewLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 42,
+            height: 42,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: _previewGoldLight,
+            ),
+          ),
+          SizedBox(height: 14),
+          Text(
+            'جارٍ تجهيز معاينة المحضر…',
+            style: TextStyle(color: _previewMuted, fontSize: 12.5),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ReportPdfPageViewer extends StatefulWidget {
@@ -1751,167 +2126,457 @@ class _ReportPdfPageViewer extends StatefulWidget {
 }
 
 class _ReportPdfPageViewerState extends State<_ReportPdfPageViewer> {
-  final transformationController = TransformationController();
-  int pageIndex = 0;
-  double zoom = 1;
-  Size viewportSize = Size.zero;
+  final _transformation = TransformationController();
+  final _focusNode = FocusNode(debugLabel: 'report-preview');
+  int _pageIndex = 0;
+  double _zoom = 1;
+  Size _viewport = Size.zero;
+  _PreviewFitMode _fitMode = _PreviewFitMode.page;
+  bool _applyingZoom = false;
 
-  static const minZoom = 0.75;
-  static const maxZoom = 4.0;
+  static const double _minZoom = .4;
+  static const double _maxZoom = 4.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _transformation.addListener(_onTransformation);
+  }
 
   @override
   void didUpdateWidget(covariant _ReportPdfPageViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (pageIndex >= widget.pages.length) {
-      pageIndex = widget.pages.isEmpty ? 0 : widget.pages.length - 1;
-      _setZoom(1);
+    if (_pageIndex >= widget.pages.length) {
+      _pageIndex = widget.pages.isEmpty ? 0 : widget.pages.length - 1;
+      _scheduleReset();
     }
   }
 
   @override
   void dispose() {
-    transformationController.dispose();
+    _transformation.removeListener(_onTransformation);
+    _transformation.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _setZoom(double value) {
-    zoom = value.clamp(minZoom, maxZoom).toDouble();
-    final offsetX = viewportSize.width * (1 - zoom) / 2;
-    final offsetY = viewportSize.height * (1 - zoom) / 2;
-    transformationController.value = transformationController.value.clone()
-      ..setIdentity()
-      ..translateByDouble(offsetX, offsetY, 0, 1)
-      ..scaleByDouble(zoom, zoom, 1, 1);
-    setState(() {});
+  void _onTransformation() {
+    if (_applyingZoom) return;
+    final scale = _transformation.value.getMaxScaleOnAxis();
+    if ((scale - _zoom).abs() > .005 &&
+        scale >= _minZoom &&
+        scale <= _maxZoom) {
+      setState(() => _zoom = scale);
+    }
+  }
+
+  Size _baseSize(Size viewport, PdfPreviewPageData page) {
+    final padding = viewport.width < 640 ? 18.0 : 34.0;
+    final availableWidth = math.max(1.0, viewport.width - padding * 2);
+    final availableHeight = math.max(1.0, viewport.height - padding * 2);
+    final rawAspect = page.aspectRatio;
+    final aspect = rawAspect.isFinite && rawAspect > 0 ? rawAspect : 1.0;
+    double width;
+    double height;
+    if (_fitMode == _PreviewFitMode.page) {
+      width = math.min(availableWidth, availableHeight * aspect);
+      height = width / aspect;
+    } else {
+      width = availableWidth;
+      height = width / aspect;
+    }
+    return Size(width, height);
+  }
+
+  Size _childSize(Size viewport, Size base) => Size(
+        math.max(viewport.width, base.width),
+        math.max(viewport.height, base.height),
+      );
+
+  void _applyZoom(double value) {
+    if (widget.pages.isEmpty || _viewport == Size.zero) return;
+    final z = value.clamp(_minZoom, _maxZoom).toDouble();
+    final page = widget.pages[_pageIndex.clamp(0, widget.pages.length - 1)];
+    final base = _baseSize(_viewport, page);
+    final child = _childSize(_viewport, base);
+    final dx = (_viewport.width - child.width * z) / 2;
+    final dy = (_viewport.height - child.height * z) / 2;
+    _applyingZoom = true;
+    _transformation.value = Matrix4.identity()
+      ..translateByDouble(dx, dy, 0, 1)
+      ..scaleByDouble(z, z, 1, 1);
+    _applyingZoom = false;
+    setState(() => _zoom = z);
+  }
+
+  void _scheduleReset() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyZoom(1);
+    });
   }
 
   void _changePage(int delta) {
-    final next = (pageIndex + delta).clamp(0, widget.pages.length - 1);
-    if (next == pageIndex) return;
-    pageIndex = next;
-    _setZoom(1);
+    if (widget.pages.length < 2) return;
+    final next = (_pageIndex + delta).clamp(0, widget.pages.length - 1);
+    if (next == _pageIndex) return;
+    setState(() => _pageIndex = next);
+    _scheduleReset();
+  }
+
+  void _setFitMode(_PreviewFitMode mode) {
+    if (_fitMode == mode) {
+      _scheduleReset();
+      return;
+    }
+    setState(() => _fitMode = mode);
+    _scheduleReset();
+  }
+
+  void _zoomBy(double delta) => _applyZoom(_zoom + delta);
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      Navigator.of(context).maybePop();
+      return KeyEventResult.handled;
+    }
+    final character = event.character;
+    if (character == '+' || character == '=') {
+      _zoomBy(.2);
+      return KeyEventResult.handled;
+    }
+    if (character == '-') {
+      _zoomBy(-.2);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+      _setFitMode(_PreviewFitMode.page);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.keyW) {
+      _setFitMode(_PreviewFitMode.width);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.pageDown) {
+      _changePage(1);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowRight ||
+        key == LogicalKeyboardKey.pageUp) {
+      _changePage(-1);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.pages.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (widget.pages.isEmpty) return const _PreviewLoading();
 
-    return Column(
-      children: [
-        Material(
-          color: Theme.of(context).colorScheme.surface,
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              children: [
-                IconButton(
+    final index = _pageIndex.clamp(0, widget.pages.length - 1);
+    final page = widget.pages[index];
+
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _onKey,
+      child: Column(
+        children: [
+          _buildToolbar(context),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewport =
+                    Size(constraints.maxWidth, constraints.maxHeight);
+                final changed = viewport != _viewport;
+                _viewport = viewport;
+                final base = _baseSize(viewport, page);
+                final child = _childSize(viewport, base);
+                if (changed) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _applyZoom(_zoom);
+                  });
+                }
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment.topCenter,
+                          radius: 1.35,
+                          colors: [Color(0xFF123B34), _previewBg],
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        transformationController: _transformation,
+                        constrained: false,
+                        minScale: _minZoom,
+                        maxScale: _maxZoom,
+                        boundaryMargin: const EdgeInsets.all(280),
+                        child: SizedBox(
+                          width: child.width,
+                          height: child.height,
+                          child: Center(
+                            child: SizedBox(
+                              width: base.width,
+                              height: base.height,
+                              child: _pageCard(page),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pageCard(PdfPreviewPageData page) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: kGold.withValues(alpha: .35)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .55),
+            blurRadius: 34,
+            spreadRadius: 4,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: ClipRect(
+        child: Image(
+          image: page.image,
+          fit: BoxFit.fill,
+          filterQuality: FilterQuality.high,
+          gaplessPlayback: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToolbar(BuildContext context) {
+    final hasPages = widget.pages.length > 1;
+    return Container(
+      decoration: const BoxDecoration(
+        color: _previewPanel,
+        border: Border(
+          bottom: BorderSide(color: Color(0x33A98545)),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 780;
+          return Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              if (hasPages) ...[
+                _toolIcon(
+                  icon: CupertinoIcons.chevron_right,
                   tooltip: 'الصفحة السابقة',
-                  onPressed: pageIndex > 0 ? () => _changePage(-1) : null,
-                  icon: const Icon(CupertinoIcons.chevron_right),
+                  onTap: _pageIndex > 0 ? () => _changePage(-1) : null,
                 ),
-                Text('${pageIndex + 1} / ${widget.pages.length}'),
-                IconButton(
+                _pill('${_pageIndex + 1} / ${widget.pages.length}'),
+                _toolIcon(
+                  icon: CupertinoIcons.chevron_left,
                   tooltip: 'الصفحة التالية',
-                  onPressed: pageIndex < widget.pages.length - 1
+                  onTap: _pageIndex < widget.pages.length - 1
                       ? () => _changePage(1)
                       : null,
-                  icon: const Icon(CupertinoIcons.chevron_left),
                 ),
-                const SizedBox(width: 12),
-                IconButton(
-                  tooltip: 'تصغير',
-                  onPressed:
-                      zoom > minZoom ? () => _setZoom(zoom - 0.25) : null,
-                  icon: const Icon(Icons.zoom_out),
-                ),
-                SizedBox(
-                  width: 140,
+                _toolDivider(),
+              ],
+              _toolIcon(
+                icon: Icons.zoom_out,
+                tooltip: 'تصغير (-)',
+                onTap: _zoom > _minZoom ? () => _zoomBy(-.2) : null,
+              ),
+              SizedBox(
+                width: compact ? 110 : 150,
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: kGold,
+                    inactiveTrackColor: Colors.white.withValues(alpha: .14),
+                    thumbColor: _previewGoldLight,
+                    overlayColor: kGold.withValues(alpha: .18),
+                    trackHeight: 3,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 7),
+                    overlayShape:
+                        const RoundSliderOverlayShape(overlayRadius: 14),
+                  ),
                   child: Slider(
-                    min: minZoom,
-                    max: maxZoom,
-                    divisions: 13,
-                    value: zoom,
-                    label: '${(zoom * 100).round()}%',
-                    onChanged: _setZoom,
+                    min: _minZoom,
+                    max: _maxZoom,
+                    value: _zoom.clamp(_minZoom, _maxZoom),
+                    onChanged: _applyZoom,
                   ),
                 ),
-                IconButton(
-                  tooltip: 'تكبير',
-                  onPressed:
-                      zoom < maxZoom ? () => _setZoom(zoom + 0.25) : null,
-                  icon: const Icon(Icons.zoom_in),
-                ),
-                SizedBox(
-                  width: 48,
+              ),
+              _toolIcon(
+                icon: Icons.zoom_in,
+                tooltip: 'تكبير (+)',
+                onTap: _zoom < _maxZoom ? () => _zoomBy(.2) : null,
+              ),
+              _pill('${(_zoom * 100).round()}%'),
+              _toolDivider(),
+              _fitButton(
+                icon: Icons.fit_screen,
+                label: 'ملاءمة الصفحة',
+                selected: _fitMode == _PreviewFitMode.page,
+                compact: compact,
+                onTap: () => _setFitMode(_PreviewFitMode.page),
+              ),
+              _fitButton(
+                icon: Icons.swap_horiz,
+                label: 'ملاءمة العرض',
+                selected: _fitMode == _PreviewFitMode.width,
+                compact: compact,
+                onTap: () => _setFitMode(_PreviewFitMode.width),
+              ),
+              if (!compact) ...[
+                _toolDivider(),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    '${(zoom * 100).round()}%',
-                    textAlign: TextAlign.center,
+                    'Esc إغلاق · + / - تكبير · 0 صفحة · W عرض',
+                    style: TextStyle(color: _previewMuted, fontSize: 10.5),
                   ),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _setZoom(1),
-                  icon:
-                      const Icon(CupertinoIcons.arrow_up_left_arrow_down_right),
-                  label: const Text('ملاءمة الصفحة'),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _toolIcon({
+    required IconData icon,
+    required String tooltip,
+    VoidCallback? onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: .05),
+        borderRadius: BorderRadius.circular(9),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: onTap,
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(
+              icon,
+              size: 17,
+              color: onTap == null
+                  ? _previewMuted.withValues(alpha: .4)
+                  : _previewText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String text) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .05),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: .10)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: _previewText,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _toolDivider() {
+    return Container(
+      width: 1,
+      height: 22,
+      margin: const EdgeInsets.symmetric(horizontal: 3),
+      color: Colors.white.withValues(alpha: .12),
+    );
+  }
+
+  Widget _fitButton({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required bool compact,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: selected
+            ? kGold.withValues(alpha: .18)
+            : Colors.white.withValues(alpha: .05),
+        borderRadius: BorderRadius.circular(9),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: onTap,
+          child: Container(
+            height: 34,
+            padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: selected
+                    ? kGold.withValues(alpha: .65)
+                    : Colors.white.withValues(alpha: .10),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: selected ? _previewGoldLight : _previewText,
                 ),
+                if (!compact) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: selected ? _previewGoldLight : _previewText,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              viewportSize = Size(constraints.maxWidth, constraints.maxHeight);
-              final page = widget.pages[pageIndex];
-              final aspectRatio = page.aspectRatio;
-              final maxWidth = constraints.maxWidth * 0.96;
-              final maxHeight = constraints.maxHeight * 0.96;
-              final pageWidth = maxWidth / maxHeight > aspectRatio
-                  ? maxHeight * aspectRatio
-                  : maxWidth;
-              final pageHeight = pageWidth / aspectRatio;
-
-              return ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: InteractiveViewer(
-                    transformationController: transformationController,
-                    minScale: minZoom,
-                    maxScale: maxZoom,
-                    boundaryMargin: const EdgeInsets.all(180),
-                    child: SizedBox(
-                      width: pageWidth,
-                      height: pageHeight,
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 14,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Image(
-                          image: page.image,
-                          fit: BoxFit.fill,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

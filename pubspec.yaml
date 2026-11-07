@@ -34,3 +34,5 @@ flutter:
   assets:
     - assets/logos/mof_logo.png
     - assets/logos/dept_logo.png
+    - assets/fonts/Tajawal-Regular.ttf
+    - assets/fonts/Tajawal-Bold.ttf
