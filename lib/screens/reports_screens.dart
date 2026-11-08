@@ -133,6 +133,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       sMother = TextEditingController(),
       sNat = TextEditingController();
   final inspectorControllers = <TextEditingController>[];
+  final inspectorManual = <bool>[];
   final fieldHead = TextEditingController(), deptHead = TextEditingController();
 
   @override
@@ -188,6 +189,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       }
       inspectorControllers.removeRange(5, inspectorControllers.length);
     }
+    final accountNames = st.users
+        .map((user) => user.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet();
+    inspectorManual
+      ..clear()
+      ..addAll(inspectorControllers.asMap().entries.map((entry) {
+        final name = entry.value.text.trim();
+        // المراقبان الأول والثاني من حسابات النظام دائماً.
+        if (entry.key < 2) return false;
+        return name.isNotEmpty && !accountNames.contains(name);
+      }));
     fieldHead.text = r.fieldHead;
     deptHead.text = r.deptHead;
     timer = Timer.periodic(const Duration(seconds: 5), (_) => _autosave());
@@ -226,6 +239,10 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       return;
     }
     inspectorControllers.add(TextEditingController());
+    while (inspectorManual.length < inspectorControllers.length - 1) {
+      inspectorManual.add(false);
+    }
+    inspectorManual.add(false);
     _touch();
   }
 
@@ -233,7 +250,78 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     if (index < 2 || inspectorControllers.length <= 2) return;
     final controller = inspectorControllers.removeAt(index);
     controller.dispose();
+    if (index < inspectorManual.length) inspectorManual.removeAt(index);
     _touch();
+  }
+
+  /// تبديل مصدر المراقب الإضافي بين حسابات النظام والإدخال اليدوي.
+  void _setInspectorMode(int index, bool manual) {
+    if (index < 2 || index >= inspectorControllers.length) return;
+    while (inspectorManual.length < inspectorControllers.length) {
+      inspectorManual.add(false);
+    }
+    if (inspectorManual[index] == manual) return;
+    inspectorManual[index] = manual;
+    inspectorControllers[index].clear();
+    _touch();
+  }
+
+  /// أسماء المراقبين المتاحين من حسابات النظام (الفعالة فقط).
+  List<String> _availableMonitors(AppStore st) {
+    final names = st.users
+        .where((user) =>
+            user.active && (user.role == 'monitor' || user.role == 'user'))
+        .map((user) => user.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return names;
+  }
+
+  /// جميع الأسماء الموجودة في جدول الحسابات بغض النظر عن الدور أو الحالة.
+  Set<String> _accountNames(AppStore st) => st.users
+      .map((user) => user.name.trim())
+      .where((name) => name.isNotEmpty)
+      .toSet();
+
+  /// التحقق من قواعد المراقبين: مراقبان على الأقل، بلا تكرار،
+  /// الأول والثاني من الحسابات، والإدخال اليدوي لا يطابق حساباً مسجّلاً.
+  String? _inspectorsError(AppStore st) {
+    if (inspectorControllers.length < 2) {
+      return 'يجب اختيار مراقبين (2 على الأقل)';
+    }
+    final first = inspectorControllers[0].text.trim();
+    final second = inspectorControllers[1].text.trim();
+    if (first.isEmpty) return 'اختر المراقب الأول من القائمة';
+    if (second.isEmpty) return 'اختر المراقب الثاني من القائمة';
+    final names = inspectorControllers
+        .map((controller) => controller.text.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (names.length < 2) return 'يجب اختيار مراقبين (2 على الأقل)';
+    if (names.toSet().length != names.length) return 'لا يمكن تكرار المراقب';
+
+    final available = _availableMonitors(st);
+    final accounts = _accountNames(st);
+    for (var i = 0; i < inspectorControllers.length; i++) {
+      final name = inspectorControllers[i].text.trim();
+      if (name.isEmpty) continue;
+      final manual =
+          i >= 2 && i < inspectorManual.length && inspectorManual[i];
+      if (i < 2 && !available.contains(name)) {
+        return i == 0
+            ? 'اختر المراقب الأول من القائمة'
+            : 'اختر المراقب الثاني من القائمة';
+      }
+      if (i >= 2 && manual && accounts.contains(name)) {
+        return 'لا يجوز كتابة شخص يدوياً وهو موجود في جدول الحسابات؛ اختره من القائمة';
+      }
+      if (i >= 2 && !manual && !available.contains(name)) {
+        return 'اختر المراقب من القائمة أو بدّل إلى الإدخال اليدوي';
+      }
+    }
+    return null;
   }
 
   /// حفظ تلقائي كمسودة كل بضع ثوانٍ عند وجود تغيير.
@@ -408,16 +496,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final e = st.validateSerial(r.serial, exceptId: r.id);
     if (e != null) return setState(() => err = e);
     if (r.taxpayerId.isEmpty) return setState(() => err = 'اختر المكلف');
-    final selectedInspectors = inspectorControllers
-        .map((controller) => controller.text.trim())
-        .where((name) => name.isNotEmpty)
-        .toList();
-    if (selectedInspectors.length < 2) {
-      return setState(() => err = 'يجب اختيار مراقبين (2 على الأقل)');
-    }
-    if (selectedInspectors.toSet().length != selectedInspectors.length) {
-      return setState(() => err = 'لا يمكن تكرار المراقب');
-    }
+    final inspectorError = _inspectorsError(st);
+    if (inspectorError != null) return setState(() => err = inspectorError);
     if (submit && r.items.isEmpty) {
       return setState(() => err = 'أضف مخالفة واحدة على الأقل');
     }
@@ -428,16 +508,9 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
 
   Future<void> _preview(AppStore st) async {
     _collect();
-    final selectedInspectors = inspectorControllers
-        .map((controller) => controller.text.trim())
-        .where((name) => name.isNotEmpty)
-        .toList();
-    if (selectedInspectors.length < 2) {
-      if (mounted) toast(context, 'يجب اختيار مراقبين (2 على الأقل)');
-      return;
-    }
-    if (selectedInspectors.toSet().length != selectedInspectors.length) {
-      if (mounted) toast(context, 'لا يمكن تكرار المراقب');
+    final inspectorError = _inspectorsError(st);
+    if (inspectorError != null) {
+      if (mounted) toast(context, inspectorError);
       return;
     }
     try {
@@ -676,6 +749,224 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
         ),
       );
 
+  static const _monitorOrdinals = [
+    'الأول',
+    'الثاني',
+    'الثالث',
+    'الرابع',
+    'الخامس',
+  ];
+
+  String _monitorTitle(int index) => index < _monitorOrdinals.length
+      ? 'المراقب ${_monitorOrdinals[index]}'
+      : 'المراقب ${index + 1}';
+
+  /// صف مراقب: الأول والثاني من الحسابات فقط، والإضافي من الحسابات أو يدوياً.
+  Widget _inspectorRow(
+      int i, List<String> availableMonitors, Set<String> accountNames) {
+    final ctl = inspectorControllers[i];
+    final current = ctl.text.trim();
+    final required = i < 2;
+    final manual =
+        !required && i < inspectorManual.length && inspectorManual[i];
+    final accent = required ? kPrimary : const Color(0xFF8B7FD1);
+    final otherNames = inspectorControllers
+        .asMap()
+        .entries
+        .where((entry) => entry.key != i)
+        .map((entry) => entry.value.text.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    final systemOptions = availableMonitors
+        .where((name) => name == current || !otherNames.contains(name))
+        .toList();
+    if (current.isNotEmpty && !systemOptions.contains(current)) {
+      systemOptions.insert(0, current);
+    }
+    final systemValue =
+        current.isNotEmpty && systemOptions.contains(current) ? current : null;
+    final manualConflict =
+        manual && current.isNotEmpty && accountNames.contains(current);
+    final title = _monitorTitle(i);
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          color: context.p.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: manualConflict
+                ? const Color(0xFFD9534F).withValues(alpha: .55)
+                : current.isEmpty
+                    ? context.p.border
+                    : accent.withValues(alpha: .38),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      accent.withValues(alpha: .2),
+                      accent.withValues(alpha: .09),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${i + 1}',
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (!required)
+                IconButton(
+                  tooltip: 'حذف المراقب',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _removeInspector(i),
+                  icon: const Icon(CupertinoIcons.trash, size: 18),
+                ),
+            ]),
+            if (!required) ...[
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, runSpacing: 6, children: [
+                _monitorModeChip(
+                  key: ValueKey('monitor-system-mode-$i'),
+                  label: 'النظام',
+                  icon: CupertinoIcons.person_2,
+                  selected: !manual,
+                  onTap: () => _setInspectorMode(i, false),
+                ),
+                _monitorModeChip(
+                  key: ValueKey('monitor-manual-mode-$i'),
+                  label: 'يدوي',
+                  icon: CupertinoIcons.pencil,
+                  selected: manual,
+                  onTap: () => _setInspectorMode(i, true),
+                ),
+              ]),
+            ],
+            const SizedBox(height: 10),
+            if (manual)
+              TextField(
+                controller: ctl,
+                onChanged: (_) => _touch(),
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: 'اسم ${_monitorTitle(i)} (يدوياً)',
+                  hintText: 'اكتب اسم مراقب غير مسجّل في الحسابات',
+                  helperText: 'لا يُقبل اسم موجود في جدول الحسابات',
+                  errorText: manualConflict
+                      ? 'هذا الاسم موجود في الحسابات، اختره من القائمة'
+                      : null,
+                  isDense: true,
+                  fillColor: context.p.field,
+                ),
+              )
+            else
+              InputDecorator(
+                decoration: InputDecoration(
+                  isDense: true,
+                  fillColor: context.p.field,
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    key: ValueKey('monitor-system-$i'),
+                    value: systemValue,
+                    isDense: true,
+                    isExpanded: true,
+                    borderRadius: BorderRadius.circular(16),
+                    hint: Text(
+                      systemOptions.isEmpty
+                          ? 'لا توجد حسابات متاحة'
+                          : 'اختر مراقباً',
+                      style: TextStyle(color: context.p.muted, fontSize: 12),
+                    ),
+                    items: [
+                      for (final name in systemOptions)
+                        DropdownMenuItem<String>(
+                          value: name,
+                          child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged: systemOptions.isEmpty
+                        ? null
+                        : (name) {
+                            if (name == null) return;
+                            ctl.text = name;
+                            _touch();
+                          },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _monitorModeChip({
+    Key? key,
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) =>
+      ChoiceChip(
+        key: key,
+        selected: selected,
+        onSelected: (_) => onTap(),
+        showCheckmark: false,
+        avatar: Icon(icon,
+            size: 16, color: selected ? Colors.white : context.p.muted),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : context.p.text,
+          ),
+        ),
+        selectedColor: kPrimary,
+        backgroundColor: context.p.field,
+        side: BorderSide(color: selected ? kPrimary : context.p.border),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      );
+
   Widget _signatoryCard(String role, String name, IconData icon) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -724,13 +1015,8 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     final st = context.read<AppStore>();
     final t = st.tp(r.taxpayerId);
     final auto = st.settings['serialMode'] == 'auto';
-    final availableMonitors = st.users
-        .where((user) =>
-            user.active && (user.role == 'monitor' || user.role == 'user'))
-        .map((user) => user.name)
-        .toSet()
-        .toList()
-      ..sort();
+    final availableMonitors = _availableMonitors(st);
+    final accountNames = _accountNames(st);
     final divisionHeads = st.users
         .where((user) =>
             user.active && user.role == 'fieldHead' && user.division == 'field')
@@ -1298,135 +1584,146 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               Field('اسم الأم', ctl: sMother, onChanged: (_) => _touch()),
               Field('الرقم الوطني', ctl: sNat, onChanged: (_) => _touch())
             ]),
-            const SizedBox(height: 16),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: [
+                    kPrimary.withValues(alpha: .07),
+                    const Color(0xFF8B7FD1).withValues(alpha: .06),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: kPrimary.withValues(alpha: .16)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    const Text(
-                      'المراقبون',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: kPrimary.withValues(alpha: .1),
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: kPrimary.withValues(alpha: .25)),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final heading = Row(children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: AlignmentDirectional.topStart,
+                            end: AlignmentDirectional.bottomEnd,
+                            colors: [Color(0xFF2E7D71), Color(0xFF1B5B52)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: kPrimary.withValues(alpha: .25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(CupertinoIcons.person_2_fill,
+                            color: Colors.white, size: 19),
                       ),
-                      child: Text(
-                        '${inspectorControllers.length}/5',
-                        style: const TextStyle(
-                          color: kPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                const Text(
+                                  'المراقبون',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 9, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: kPrimary.withValues(alpha: .12),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color:
+                                            kPrimary.withValues(alpha: .28)),
+                                  ),
+                                  child: Text(
+                                    '${inspectorControllers.length}/5',
+                                    style: const TextStyle(
+                                      color: kPrimary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'أضف حتى 5 مراقبين للمحضر',
+                              style: TextStyle(
+                                color: context.p.muted,
+                                fontSize: 11.5,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ]),
-                  const SizedBox(height: 2),
+                    ]);
+                    final addButton = FilledButton.tonalIcon(
+                      onPressed: inspectorControllers.length >= 5
+                          ? null
+                          : _addInspector,
+                      icon: const Icon(CupertinoIcons.add, size: 18),
+                      label: const Text('إضافة مراقب'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                    if (constraints.maxWidth < 420) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          heading,
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: addButton,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(children: [
+                      Expanded(child: heading),
+                      const SizedBox(width: 10),
+                      addButton,
+                    ]);
+                  }),
+                  const SizedBox(height: 6),
+                  if (inspectorControllers.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        'لم يُضف مراقبون بعد',
+                        style: TextStyle(color: context.p.muted, fontSize: 12),
+                      ),
+                    )
+                  else
+                    for (var i = 0; i < inspectorControllers.length; i++)
+                      _inspectorRow(i, availableMonitors, accountNames),
                 ],
               ),
-              OutlinedButton.icon(
-                onPressed:
-                    inspectorControllers.length >= 5 ? null : _addInspector,
-                icon: const Icon(CupertinoIcons.add, size: 18),
-                label: const Text('إضافة مراقب'),
-              ),
-            ]),
-            if (inspectorControllers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  'لم يُضف مراقبون بعد',
-                  style: TextStyle(color: context.p.muted, fontSize: 12),
-                ),
-              )
-            else
-              for (var i = 0; i < inspectorControllers.length; i++)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: (i < 2 ? kPrimary : const Color(0xFF8B7FD1))
-                            .withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${i + 1}',
-                        style: TextStyle(
-                          color: i < 2 ? kPrimary : const Color(0xFF6C5FC0),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: InputDecorator(
-                        decoration:
-                            InputDecoration(labelText: 'المراقب ${i + 1}'),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: availableMonitors
-                                    .contains(inspectorControllers[i].text)
-                                ? inspectorControllers[i].text
-                                : null,
-                            isDense: true,
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(16),
-                            hint: const Text('اختر المراقب'),
-                            items: [
-                              for (final name in availableMonitors.where(
-                                  (name) =>
-                                      name == inspectorControllers[i].text ||
-                                      !inspectorControllers
-                                          .asMap()
-                                          .entries
-                                          .where((entry) => entry.key != i)
-                                          .map((entry) =>
-                                              entry.value.text.trim())
-                                          .contains(name)))
-                                DropdownMenuItem(
-                                  value: name,
-                                  child: Text(name),
-                                ),
-                              if (inspectorControllers[i].text.isNotEmpty &&
-                                  !availableMonitors
-                                      .contains(inspectorControllers[i].text))
-                                DropdownMenuItem(
-                                  value: inspectorControllers[i].text,
-                                  child: Text(inspectorControllers[i].text),
-                                ),
-                            ],
-                            onChanged: (name) {
-                              if (name == null) return;
-                              inspectorControllers[i].text = name;
-                              _touch();
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (i >= 2)
-                      IconButton(
-                        tooltip: 'حذف المراقب',
-                        onPressed: () => _removeInspector(i),
-                        icon: const Icon(CupertinoIcons.trash),
-                      )
-                    else
-                      const SizedBox(width: 48),
-                  ]),
-                ),
+            ),
             const SizedBox(height: 16),
             Row(children: [
               Expanded(
