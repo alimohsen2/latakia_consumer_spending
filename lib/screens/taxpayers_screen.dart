@@ -1580,26 +1580,61 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Flexible(
-                child: Text('بيانات المنشأة',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: context.p.text)),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: kPrimary.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(CupertinoIcons.briefcase,
+                    size: 19, color: kPrimary),
               ),
-              const SizedBox(width: 8),
-              Text('سجل المكلف',
-                  style: TextStyle(color: context.p.muted, fontSize: 12)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('بيانات المنشأة',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: context.p.text)),
+                    const SizedBox(height: 2),
+                    Text('المعلومات الأساسية المسجّلة',
+                        style: TextStyle(
+                            color: context.p.muted, fontSize: 11.5)),
+                  ],
+                ),
+              ),
             ]),
-            const SizedBox(height: 6),
-            const Divider(),
-            kv('المالك المسجل', t.owner),
-            kv('المهنة / النشاط', t.profession),
-            kv('العنوان', t.address),
-            kv('الفئة', t.category),
-            kv('الرقم الضريبي', t.taxNo),
+            const SizedBox(height: 14),
+            InfoTileGrid(
+              tiles: [
+                InfoTile(
+                    icon: CupertinoIcons.person,
+                    label: 'المالك المسجل',
+                    value: t.owner),
+                InfoTile(
+                    icon: CupertinoIcons.briefcase,
+                    label: 'المهنة / النشاط',
+                    value: t.profession),
+                InfoTile(
+                    icon: CupertinoIcons.tag,
+                    label: 'الفئة',
+                    value: t.category),
+                InfoTile(
+                    icon: CupertinoIcons.number,
+                    label: 'الرقم الضريبي',
+                    value: t.taxNo),
+              ],
+            ),
+            const SizedBox(height: 8),
+            InfoTile(
+                icon: CupertinoIcons.location,
+                label: 'العنوان',
+                value: t.address,
+                maxLines: 3),
           ]),
         );
         final side = Column(children: [

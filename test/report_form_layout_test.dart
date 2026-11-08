@@ -71,6 +71,9 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('إنشاء محضر ضبط مخالفة'), findsOneWidget);
     expect(find.text('ملخص المحضر'), findsOneWidget);
+    expect(find.text('المالك المسجل'), findsOneWidget);
+    expect(find.text('الرقم الضريبي'), findsOneWidget);
+    expect(find.text('العنوان'), findsOneWidget);
   });
 
   testWidgets('نموذج المحضر: مراقب إضافي يدوياً بلا فيض على عرض ضيق',

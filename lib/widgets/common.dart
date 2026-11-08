@@ -497,3 +497,128 @@ Widget kv(String k, String v) => Builder(
         ]),
       ),
     );
+
+/// بطاقة معلومة موحّدة: أيقونة + عنوان + قيمة، بخلفية وحدود متناسقة.
+class InfoTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? accent;
+  final int maxLines;
+  const InfoTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.accent,
+    this.maxLines = 2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accent ?? kPrimary;
+    final empty = value.trim().isEmpty;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 78),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 11, 12, 11),
+      decoration: BoxDecoration(
+        color: context.p.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.p.border.withValues(alpha: .8)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 17, color: color),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: context.p.muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                empty ? '—' : value,
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                  color: empty ? context.p.muted : context.p.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// شبكة متجاوبة لبطاقات [InfoTile]: عمودان على العرض الواسع وعمود واحد على الضيق.
+class InfoTileGrid extends StatelessWidget {
+  final List<Widget> tiles;
+  final double gap;
+  final double breakpoint;
+  const InfoTileGrid({
+    super.key,
+    required this.tiles,
+    this.gap = 8,
+    this.breakpoint = 520,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final twoColumns = constraints.maxWidth >= breakpoint;
+      if (!twoColumns) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < tiles.length; i++)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+                child: tiles[i],
+              ),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < tiles.length; i += 2)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : gap),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: tiles[i]),
+                  SizedBox(width: gap),
+                  Expanded(
+                    child: i + 1 < tiles.length
+                        ? tiles[i + 1]
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      );
+    });
+  }
+}

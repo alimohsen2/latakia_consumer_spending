@@ -1349,65 +1349,123 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: context.p.surfaceAlt,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.p.border),
-                ),
-                child: Row(children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor:
-                        const Color(0xFF7FB8FF).withValues(alpha: .18),
-                    child: const Icon(CupertinoIcons.briefcase,
-                        color: Color(0xFF2F6B4A), size: 20),
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      const Color(0xFF7FB8FF).withValues(alpha: .09),
+                      kPrimary.withValues(alpha: .05),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.name,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                      color: const Color(0xFF7FB8FF).withValues(alpha: .22)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: AlignmentDirectional.topStart,
+                            end: AlignmentDirectional.bottomEnd,
+                            colors: [Color(0xFF4C8DFF), Color(0xFF2C6BC9)],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4C8DFF)
+                                  .withValues(alpha: .28),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          t.name.trim().isEmpty
+                              ? 'م'
+                              : t.name.trim().substring(0, 1),
                           style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${t.category} · ${t.taxNo}',
-                          style: TextStyle(
-                            color: context.p.muted,
-                            fontSize: 12,
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${t.category} · ${t.taxNo}',
+                              style: TextStyle(
+                                color: context.p.muted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      StatusBadge(t.status),
+                    ]),
+                    const SizedBox(height: 14),
+                    Divider(height: 1, color: context.p.border),
+                    const SizedBox(height: 12),
+                    InfoTileGrid(
+                      tiles: [
+                        InfoTile(
+                          icon: CupertinoIcons.person,
+                          label: 'المالك المسجل',
+                          value: t.owner,
+                          accent: const Color(0xFF4C8DFF),
+                        ),
+                        InfoTile(
+                          icon: CupertinoIcons.briefcase,
+                          label: 'المهنة / النشاط',
+                          value: t.profession,
+                          accent: const Color(0xFF4C8DFF),
+                        ),
+                        InfoTile(
+                          icon: CupertinoIcons.tag,
+                          label: 'الفئة',
+                          value: t.category,
+                          accent: const Color(0xFF4C8DFF),
+                        ),
+                        InfoTile(
+                          icon: CupertinoIcons.number,
+                          label: 'الرقم الضريبي',
+                          value: t.taxNo,
+                          accent: const Color(0xFF4C8DFF),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  StatusBadge(t.status),
-                ]),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 24,
-                runSpacing: 4,
-                children: [
-                  SizedBox(
-                    width: 250,
-                    child: Column(children: [
-                      kv('الرقم الضريبي', t.taxNo),
-                      kv('العنوان', t.address),
-                    ]),
-                  ),
-                  SizedBox(
-                    width: 250,
-                    child: Column(children: [
-                      kv('المالك المسجل', t.owner),
-                      kv('المهنة', t.profession),
-                    ]),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    InfoTile(
+                      icon: CupertinoIcons.location,
+                      label: 'العنوان',
+                      value: t.address,
+                      accent: const Color(0xFF4C8DFF),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
               ),
             ],
           ],
