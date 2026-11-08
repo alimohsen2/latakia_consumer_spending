@@ -57,8 +57,6 @@ const _items = [
       Color(0xFF9FE3C0)),
   _Nav('/profile', 'ملفي الشخصي', CupertinoIcons.person_crop_circle, null,
       'المستخدمون والصلاحيات', Color(0xFF9EC5FF)),
-  _Nav('/change-password', 'تغيير كلمة المرور', CupertinoIcons.lock_rotation,
-      null, 'المستخدمون والصلاحيات', Color(0xFF8ADCE3)),
   _Nav('/permissions', 'الصلاحيات', CupertinoIcons.lock_shield,
       'permissions.manage', 'المستخدمون والصلاحيات', Color(0xFFFFD27A)),
   _Nav('/serials', 'دفاتر أرقام المحاضر', CupertinoIcons.list_number,

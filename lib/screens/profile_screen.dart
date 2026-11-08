@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +85,7 @@ class ProfileScreen extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProfileAvatar(store: st, user: user),
+            _ProfileAvatar(store: st, user: user, editable: isSelf),
             const SizedBox(width: 18),
             Expanded(
               child: Column(
@@ -324,47 +325,143 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _ProfileAvatar extends StatelessWidget {
+class _ProfileAvatar extends StatefulWidget {
   final AppStore store;
   final AppUser user;
+  final bool editable;
 
-  const _ProfileAvatar({required this.store, required this.user});
+  const _ProfileAvatar({
+    required this.store,
+    required this.user,
+    required this.editable,
+  });
+
+  @override
+  State<_ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<_ProfileAvatar> {
+  bool uploading = false;
+
+  Future<void> _pickPhoto() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+      if (result == null || !mounted) return;
+      final file = result.files.single;
+      final bytes = file.bytes;
+      if (bytes == null) {
+        toast(context, 'تعذر قراءة الصورة المختارة');
+        return;
+      }
+
+      final extension = file.extension?.toLowerCase() ?? '';
+      final mime = switch (extension) {
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+        _ => 'application/octet-stream',
+      };
+
+      setState(() => uploading = true);
+      final error = await widget.store.setUserPhoto(
+        widget.user.id,
+        name: file.name,
+        mime: mime,
+        bytes: bytes,
+      );
+      if (!mounted) return;
+      setState(() => uploading = false);
+      if (error != null) {
+        toast(context, error);
+        return;
+      }
+      toast(context, 'تم تحديث الصورة الشخصية');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => uploading = false);
+      toast(context, 'تعذر تحديث الصورة الشخصية: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        user.name.trim().isEmpty ? '؟' : user.name.trim().substring(0, 1);
-    return FutureBuilder<Uint8List?>(
-      key: ValueKey(user.photoId),
-      future: user.photoId.isEmpty ? null : store.attachmentBytes(user.photoId),
-      builder: (context, snapshot) {
-        final bytes = snapshot.data;
-        return Container(
-          width: 92,
-          height: 92,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: context.p.border, width: 1.5),
+    final initial = widget.user.name.trim().isEmpty
+        ? '؟'
+        : widget.user.name.trim().substring(0, 1);
+    return SizedBox(
+      width: 104,
+      height: 104,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            child: FutureBuilder<Uint8List?>(
+              key: ValueKey(widget.user.photoId),
+              future: widget.user.photoId.isEmpty
+                  ? null
+                  : widget.store.attachmentBytes(widget.user.photoId),
+              builder: (context, snapshot) {
+                final bytes = snapshot.data;
+                return Container(
+                  width: 92,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: context.p.border, width: 1.5),
+                  ),
+                  child: ClipOval(
+                    child: bytes == null
+                        ? ColoredBox(
+                            color: kPrimary.withValues(alpha: .12),
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: kPrimary,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Image.memory(bytes, fit: BoxFit.cover),
+                  ),
+                );
+              },
+            ),
           ),
-          child: ClipOval(
-            child: bytes == null
-                ? ColoredBox(
-                    color: kPrimary.withValues(alpha: .12),
-                    child: Center(
-                      child: Text(
-                        initial,
-                        style: const TextStyle(
-                          color: kPrimary,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
+          if (widget.editable)
+            PositionedDirectional(
+              end: 0,
+              bottom: 4,
+              child: IconButton.filled(
+                tooltip: 'تعديل الصورة الشخصية',
+                onPressed: uploading ? null : _pickPhoto,
+                icon: uploading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ),
-                    ),
-                  )
-                : Image.memory(bytes, fit: BoxFit.cover),
-          ),
-        );
-      },
+                      )
+                    : const Icon(CupertinoIcons.camera_fill, size: 18),
+                style: IconButton.styleFrom(
+                  backgroundColor: kPrimary,
+                  foregroundColor: Colors.white,
+                  fixedSize: const Size(38, 38),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

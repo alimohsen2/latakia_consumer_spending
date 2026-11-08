@@ -119,6 +119,7 @@ class ReportFormScreen extends StatefulWidget {
 class _ReportFormScreenState extends State<ReportFormScreen> {
   late Report r;
   bool editable = true, dirty = false;
+  bool manualDateTime = false;
   String? err;
   String saved = '';
   Timer? timer;
@@ -256,6 +257,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   }
 
   Future<void> _pickReportDate() async {
+    if (!manualDateTime) return;
     final selected = await showDatePicker(
       context: context,
       initialDate: r.date,
@@ -274,6 +276,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
   }
 
   Future<void> _pickReportTime() async {
+    if (!manualDateTime) return;
     final selected = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(r.date),
@@ -293,6 +296,12 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       selected.hour,
       selected.minute,
     );
+    _touch();
+  }
+
+  void _setDateTimeMode(bool manual) {
+    manualDateTime = manual;
+    if (!manual) r.date = DateTime.now();
     _touch();
   }
 
@@ -765,16 +774,18 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       required String value,
       required IconData icon,
       required VoidCallback onTap,
+      required bool enabled,
     }) =>
         Expanded(
           child: InkWell(
-            onTap: onTap,
+            onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
               decoration: InputDecoration(
                 labelText: label,
                 suffixIcon: Icon(icon, size: 19),
-                fillColor: context.p.surfaceAlt,
+                fillColor: enabled ? context.p.surfaceAlt : null,
+                enabled: enabled,
               ),
               child: Text(value),
             ),
@@ -954,14 +965,40 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 value: fmtDate(r.date),
                 icon: Icons.calendar_today_outlined,
                 onTap: _pickReportDate,
+                enabled: manualDateTime,
               ),
               reportDateTimeField(
                 label: 'الوقت',
                 value: fmtTime12(r.date),
                 icon: Icons.access_time,
                 onTap: _pickReportTime,
+                enabled: manualDateTime,
               ),
             ]),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'التاريخ والوقت:',
+                  style: TextStyle(
+                    color: context.p.muted,
+                    fontSize: 13,
+                  ),
+                ),
+                ChoiceChip(
+                  label: const Text('تلقائي'),
+                  selected: !manualDateTime,
+                  onSelected: editable ? (_) => _setDateTimeMode(false) : null,
+                ),
+                ChoiceChip(
+                  label: const Text('يدوي'),
+                  selected: manualDateTime,
+                  onSelected: editable ? (_) => _setDateTimeMode(true) : null,
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
             responsiveFieldRows([
               Field('رقم الأمر الإداري',

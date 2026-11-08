@@ -23,6 +23,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final confirmation = TextEditingController();
   String? error;
   bool saving = false;
+  bool showCurrent = false, showNext = false, showConfirmation = false;
 
   @override
   void dispose() {
@@ -70,75 +71,352 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<AppStore>();
+    final requiredChange = store.me?.passwordChangeRequired == true;
+    Widget passwordField({
+      required TextEditingController controller,
+      required String label,
+      required IconData icon,
+      required bool visible,
+      required VoidCallback onToggle,
+      Iterable<String>? autofillHints,
+      VoidCallback? onSubmitted,
+    }) =>
+        TextField(
+          controller: controller,
+          obscureText: !visible,
+          autofillHints: autofillHints,
+          onSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, size: 19),
+            suffixIcon: IconButton(
+              tooltip: visible ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور',
+              onPressed: onToggle,
+              icon: Icon(
+                visible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                size: 19,
+              ),
+            ),
+            filled: true,
+            fillColor: context.p.field,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: context.p.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: context.p.border),
+            ),
+          ),
+        );
+
+    Widget guidance = Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.p.surfaceAlt,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.p.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(CupertinoIcons.checkmark_shield_fill,
+              color: kPrimary2, size: 25),
+          const SizedBox(height: 12),
+          const Text(
+            'نصائح لكلمة مرور آمنة',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
+          const SizedBox(height: 10),
+          for (final tip in [
+            'استخدم 6 أحرف على الأقل.',
+            'اختر كلمة مرور يصعب تخمينها.',
+            'لا تشارك كلمة المرور مع الآخرين.',
+          ])
+            Padding(
+              padding: const EdgeInsets.only(top: 7),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(CupertinoIcons.checkmark_circle_fill,
+                      size: 16, color: kPrimary2),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      tip,
+                      style: TextStyle(
+                        color: context.p.muted,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+
     return Scaffold(
       backgroundColor: context.p.bg,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: AppCard(
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [context.p.bg, context.p.surfaceAlt],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    store.me?.passwordChangeRequired == true
-                        ? 'تعيين كلمة مرور جديدة'
-                        : 'تغيير كلمة المرور',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    store.me?.passwordChangeRequired == true
-                        ? 'هذه كلمة مرور مؤقتة. غيّرها للمتابعة إلى النظام.'
-                        : 'أدخل كلمة المرور الحالية ثم اختر كلمة مرور جديدة.',
-                    style: TextStyle(color: context.p.muted),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: current,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.password],
-                    decoration: const InputDecoration(
-                      labelText: 'كلمة المرور الحالية',
+                  Container(
+                    padding: const EdgeInsets.all(26),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                        colors: [kPrimary, Color(0xFF2E8C7E)],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kPrimary.withValues(alpha: .2),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 11, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .14),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                requiredChange ? 'إجراء مطلوب' : 'أمان الحساب',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            if (!requiredChange)
+                              TextButton.icon(
+                                onPressed: () => context.go('/profile'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor:
+                                      Colors.white.withValues(alpha: .12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                icon: const Icon(
+                                  CupertinoIcons.arrow_right,
+                                  size: 17,
+                                ),
+                                label: const Text('الملف الشخصي'),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    requiredChange
+                                        ? 'أنشئ كلمة مرور جديدة'
+                                        : 'حافظ على أمان حسابك',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 7),
+                                  Text(
+                                    requiredChange
+                                        ? 'هذه كلمة مرور مؤقتة. غيّرها للمتابعة إلى النظام.'
+                                        : 'أدخل كلمة المرور الحالية ثم اختر كلمة مرور جديدة.',
+                                    style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: .82),
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Container(
+                              width: 76,
+                              height: 76,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .13),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: .25),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: const Icon(
+                                CupertinoIcons.lock_shield_fill,
+                                color: Colors.white,
+                                size: 35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: next,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.newPassword],
-                    decoration: const InputDecoration(
-                      labelText: 'كلمة المرور الجديدة (6 أحرف على الأقل)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: confirmation,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'تأكيد كلمة المرور الجديدة',
-                    ),
-                    onSubmitted: (_) => saving ? null : _save(),
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(error!, style: const TextStyle(color: kRed)),
-                  ],
                   const SizedBox(height: 18),
-                  FilledButton(
-                    onPressed: saving ? null : _save,
-                    child: Text(saving ? 'جارٍ الحفظ…' : 'حفظ كلمة المرور'),
-                  ),
-                  TextButton(
-                    onPressed: saving
-                        ? null
-                        : () {
-                            store.logout();
-                            context.go('/login');
-                          },
-                    child: const Text('تسجيل الخروج'),
+                  AppCard(
+                    padding: const EdgeInsets.all(24),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final form = Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'بيانات كلمة المرور',
+                              style: TextStyle(
+                                color: context.p.text,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            passwordField(
+                              controller: current,
+                              label: 'كلمة المرور الحالية',
+                              icon: CupertinoIcons.lock,
+                              visible: showCurrent,
+                              onToggle: () =>
+                                  setState(() => showCurrent = !showCurrent),
+                              autofillHints: const [AutofillHints.password],
+                            ),
+                            const SizedBox(height: 13),
+                            passwordField(
+                              controller: next,
+                              label: 'كلمة المرور الجديدة (6 أحرف على الأقل)',
+                              icon: CupertinoIcons.lock_fill,
+                              visible: showNext,
+                              onToggle: () =>
+                                  setState(() => showNext = !showNext),
+                              autofillHints: const [AutofillHints.newPassword],
+                            ),
+                            const SizedBox(height: 13),
+                            passwordField(
+                              controller: confirmation,
+                              label: 'تأكيد كلمة المرور الجديدة',
+                              icon: CupertinoIcons.checkmark_shield,
+                              visible: showConfirmation,
+                              onToggle: () => setState(
+                                  () => showConfirmation = !showConfirmation),
+                              onSubmitted: saving ? null : _save,
+                            ),
+                            if (error != null) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: kRed.withValues(alpha: .08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: kRed.withValues(alpha: .22)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      CupertinoIcons.exclamationmark_circle,
+                                      color: kRed,
+                                      size: 19,
+                                    ),
+                                    const SizedBox(width: 9),
+                                    Expanded(
+                                      child: Text(
+                                        error!,
+                                        style: const TextStyle(
+                                            color: kRed, height: 1.4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 50,
+                              child: FilledButton.icon(
+                                onPressed: saving ? null : _save,
+                                icon: saving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Icon(
+                                        CupertinoIcons.checkmark_shield_fill),
+                                label: Text(
+                                    saving ? 'جارٍ الحفظ…' : 'حفظ كلمة المرور'),
+                              ),
+                            ),
+                            Align(
+                              child: TextButton.icon(
+                                onPressed: saving
+                                    ? null
+                                    : () {
+                                        store.logout();
+                                        context.go('/login');
+                                      },
+                                icon: const Icon(
+                                    CupertinoIcons.square_arrow_right),
+                                label: const Text('تسجيل الخروج'),
+                              ),
+                            ),
+                          ],
+                        );
+
+                        if (constraints.maxWidth < 680) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              form,
+                              const SizedBox(height: 20),
+                              guidance,
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 3, child: form),
+                            const SizedBox(width: 24),
+                            Expanded(flex: 2, child: guidance),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -472,91 +750,91 @@ class _UsersScreenState extends State<UsersScreen> {
             width: 520,
             child: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _UserPhotoPicker(
-                store: st,
-                onChanged: (photo) => set(() => selectedPhoto = photo),
-              ),
-              const SizedBox(height: 10),
-              rowOf([
-                Field('الاسم الكامل', ctl: name),
-                Field('رقم الموبايل', ctl: phone, type: TextInputType.phone),
-              ]),
-              const SizedBox(height: 10),
-              rowOf([
-                Field('اسم المستخدم', ctl: un),
-              ]),
-              const SizedBox(height: 10),
-              rowOf([Field('كلمة مرور مؤقتة (6 أحرف على الأقل)', ctl: pw)]),
-              const SizedBox(height: 10),
-              if (requiredAccount != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    'أكمل إنشاء الحسابات الإدارية بالترتيب قبل إضافة الموظفين والمراقبين.',
-                    style: TextStyle(color: context.p.muted),
+                _UserPhotoPicker(
+                  store: st,
+                  onChanged: (photo) => set(() => selectedPhoto = photo),
+                ),
+                const SizedBox(height: 10),
+                rowOf([
+                  Field('الاسم الكامل', ctl: name),
+                  Field('رقم الموبايل', ctl: phone, type: TextInputType.phone),
+                ]),
+                const SizedBox(height: 10),
+                rowOf([
+                  Field('اسم المستخدم', ctl: un),
+                ]),
+                const SizedBox(height: 10),
+                rowOf([Field('كلمة مرور مؤقتة (6 أحرف على الأقل)', ctl: pw)]),
+                const SizedBox(height: 10),
+                if (requiredAccount != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      'أكمل إنشاء الحسابات الإدارية بالترتيب قبل إضافة الموظفين والمراقبين.',
+                      style: TextStyle(color: context.p.muted),
+                    ),
                   ),
-                ),
-              rowOf([
-                Drop(
-                  'الدور',
-                  r,
-                  {
-                    for (final role in rolesForDivision(d)) role: kRoles[role]!,
-                  },
-                  (v) => set(() {
-                    r = v;
-                    if (isDivisionHeadRole(v)) {
-                      d = divisionForHeadRole(v)!;
-                    } else if (!['monitor', 'user'].contains(v)) {
-                      d = '';
-                    } else if (d.isEmpty || (v == 'monitor' && d != 'field')) {
-                      d = 'field';
-                    }
-                    chooseDefaultManager();
-                  }),
-                ),
-                if (requiredAccount == null && ['monitor', 'user'].contains(r))
+                rowOf([
                   Drop(
-                    'الشعبة',
-                    d,
-                    kDivisionNames,
+                    'الدور',
+                    r,
+                    {
+                    for (final role in rolesForDivision(d)) role: kRoles[role]!,
+                    },
                     (v) => set(() {
-                      d = v;
-                      if (!rolesForDivision(d).contains(r)) {
-                        r = d.isEmpty
-                            ? rolesForDivision(d).first
-                            : (rolesForDivision(d).contains('user')
-                                ? 'user'
-                                : rolesForDivision(d).first);
+                      r = v;
+                      if (isDivisionHeadRole(v)) {
+                        d = divisionForHeadRole(v)!;
+                      } else if (!['monitor', 'user'].contains(v)) {
+                        d = '';
+                    } else if (d.isEmpty || (v == 'monitor' && d != 'field')) {
+                        d = 'field';
                       }
                       chooseDefaultManager();
                     }),
-                    enabled: ['monitor', 'user'].contains(r),
                   ),
-              ]),
-              if (managerRole(r, d) != null) ...[
-                const SizedBox(height: 10),
-                rowOf([
-                  if (['monitor', 'user'].contains(r))
-                    directManagerField()
-                  else
+                if (requiredAccount == null && ['monitor', 'user'].contains(r))
                     Drop(
-                      'المسؤول المباشر',
-                      mgr,
-                      {
-                        if (managersFor(r, d).isEmpty) '': 'لا يوجد مسؤول متاح',
-                        for (final u in managersFor(r, d))
-                          u.id: '${u.name} (${kRoles[u.role]})',
-                      },
-                      (v) => set(() => mgr = v),
+                      'الشعبة',
+                      d,
+                      kDivisionNames,
+                      (v) => set(() {
+                        d = v;
+                        if (!rolesForDivision(d).contains(r)) {
+                          r = d.isEmpty
+                              ? rolesForDivision(d).first
+                              : (rolesForDivision(d).contains('user')
+                                  ? 'user'
+                                  : rolesForDivision(d).first);
+                        }
+                        chooseDefaultManager();
+                      }),
+                      enabled: ['monitor', 'user'].contains(r),
                     ),
                 ]),
-              ],
-              if (err != null)
-                Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(err!, style: const TextStyle(color: kRed))),
-            ]),
+                if (managerRole(r, d) != null) ...[
+                  const SizedBox(height: 10),
+                  rowOf([
+                    if (['monitor', 'user'].contains(r))
+                      directManagerField()
+                    else
+                      Drop(
+                        'المسؤول المباشر',
+                        mgr,
+                        {
+                        if (managersFor(r, d).isEmpty) '': 'لا يوجد مسؤول متاح',
+                          for (final u in managersFor(r, d))
+                            u.id: '${u.name} (${kRoles[u.role]})',
+                        },
+                        (v) => set(() => mgr = v),
+                      ),
+                  ]),
+                ],
+                if (err != null)
+                  Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(err!, style: const TextStyle(color: kRed))),
+              ]),
             ),
           ),
           actions: [
@@ -977,9 +1255,7 @@ class _UserPhotoPickerState extends State<_UserPhotoPicker> {
               return CircleAvatar(
                 radius: 24,
                 backgroundImage: bytes == null ? null : MemoryImage(bytes),
-                child: bytes == null
-                    ? const Icon(CupertinoIcons.person)
-                    : null,
+                child: bytes == null ? const Icon(CupertinoIcons.person) : null,
               );
             },
           ),
@@ -988,7 +1264,9 @@ class _UserPhotoPickerState extends State<_UserPhotoPicker> {
             onPressed: _pickPhoto,
             icon: const Icon(CupertinoIcons.camera),
             label: Text(selectedPhoto == null
-                ? (widget.photoId.isEmpty ? 'اختيار صورة شخصية' : 'تغيير الصورة')
+                ? (widget.photoId.isEmpty
+                    ? 'اختيار صورة شخصية'
+                    : 'تغيير الصورة')
                 : 'تغيير الصورة المختارة'),
           ),
         ],
