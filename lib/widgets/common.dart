@@ -364,7 +364,7 @@ class GridTable extends StatelessWidget {
   }
 }
 
-/// صف جدول تفاعلي: يُظلَّل عند تحويم الفأرة، ومؤشر نقر، وينفذ [onTap].
+/// صف جدول تفاعلي: يُغلَّف بإطار ذهبي بسيط عند تحويم الفأرة، ومؤشر نقر، وينفذ [onTap].
 class _HoverRow extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -389,39 +389,23 @@ class _HoverRowState extends State<_HoverRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: Stack(
-          children: [
-            // خلفية ناعمة تتدرج دون حدود تومض
-            AnimatedContainer(
-              duration: duration,
-              curve: ease,
-              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
-              decoration: BoxDecoration(
-                color: active
-                    ? context.p.surfaceAlt
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: widget.child,
+        child: AnimatedContainer(
+          duration: duration,
+          curve: ease,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
+          decoration: BoxDecoration(
+            color: active ? kGold.withValues(alpha: .06) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active
+                  ? kGold.withValues(alpha: .85)
+                  : kGold.withValues(alpha: 0),
+              width: 1.3,
             ),
-            // شريط مميز رفيع ينزلق من الحافة عند التحويم
-            PositionedDirectional(
-              start: 8,
-              top: 10,
-              bottom: 10,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: AnimatedContainer(
-                  width: active ? 3.5 : 0,
-                  duration: duration,
-                  curve: ease,
-                  color: kPrimary2,
-                ),
-              ),
-            ),
-          ],
+          ),
+          child: widget.child,
         ),
       ),
     );
