@@ -385,7 +385,9 @@ class _HoverRowState extends State<_HoverRow> {
     final enabled = widget.onTap != null;
     final active = enabled && _hover;
     const ease = Curves.easeOutCubic;
-    const duration = Duration(milliseconds: 240);
+    const duration = Duration(milliseconds: 260);
+    final scale = active ? 1.015 : 1.0;
+    final lift = active ? -4.0 : 0.0;
     return MouseRegion(
       onEnter: enabled ? (_) => setState(() => _hover = true) : null,
       onExit: enabled ? (_) => setState(() => _hover = false) : null,
@@ -398,16 +400,29 @@ class _HoverRowState extends State<_HoverRow> {
           curve: ease,
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 12),
+          transform: Matrix4.translationValues(0, lift, 0)
+            ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0)),
+          transformAlignment: Alignment.center,
           // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
           decoration: BoxDecoration(
-            color: active ? kGold.withValues(alpha: .09) : Colors.transparent,
+            color: active ? kGold.withValues(alpha: .10) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: active
-                  ? kGold.withValues(alpha: .95)
+                  ? kGold.withValues(alpha: .9)
                   : kGold.withValues(alpha: 0),
-              width: 1.5,
+              width: 1.6,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: active
+                    ? kGold.withValues(
+                        alpha: context.p.isDark ? .30 : .38)
+                    : Colors.transparent,
+                blurRadius: active ? 24 : 0,
+                offset: active ? const Offset(0, 10) : Offset.zero,
+              ),
+            ],
           ),
           child: widget.child,
         ),
