@@ -62,6 +62,7 @@ class ProfileScreen extends StatelessWidget {
         .fold<num>(0, (sum, report) => sum + report.total);
     final manager = _findUser(st, user.managerId);
     final permissions = _permissionsFor(st, user);
+    final canManageUsers = st.can('users.manage');
     final createdStamp = _stamp(user.createdAt);
 
     return PageBody(children: [
@@ -89,106 +90,198 @@ class ProfileScreen extends StatelessWidget {
       ),
       LayoutBuilder(builder: (context, constraints) {
         final wide = constraints.maxWidth >= 880;
-        final account = _InfoSection(
+        final account = _CollapsibleSection(
           title: 'بيانات الحساب',
           subtitle: 'المعلومات الأساسية للحساب والتوقيع الوظيفي',
           icon: CupertinoIcons.person_crop_rectangle,
           accent: kPrimary2,
           children: [
-            _InfoCard(
-              icon: CupertinoIcons.person_fill,
-              label: 'الاسم الكامل',
-              value: user.name,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.at,
-              label: 'اسم المستخدم',
-              value: user.username.isEmpty ? '—' : user.username,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.phone_fill,
-              label: 'رقم الموبايل',
-              value: user.phone,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.briefcase_fill,
-              label: 'الدور',
-              value: kRoles[user.role] ?? user.role,
-              accent: kGold,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.building_2_fill,
-              label: 'الشعبة',
-              value: kDivisionNames[user.division] ??
-                  kDivisions[user.division] ??
-                  user.division,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.checkmark_seal_fill,
-              label: 'الحالة',
-              value: _statusLabel(user.status),
-              accent: user.status == 'active' ? kPrimary2 : kRed,
-            ),
+            const SizedBox(height: 8),
+            InfoTileGrid(tiles: [
+              _InfoCard(
+                icon: CupertinoIcons.person_fill,
+                label: 'الاسم الكامل',
+                value: user.name,
+              ),
+              _InfoCard(
+                icon: CupertinoIcons.at,
+                label: 'اسم المستخدم',
+                value: user.username.isEmpty ? '—' : user.username,
+              ),
+              _InfoCard(
+                icon: CupertinoIcons.phone_fill,
+                label: 'رقم الموبايل',
+                value: user.phone,
+              ),
+              _InfoCard(
+                icon: CupertinoIcons.briefcase_fill,
+                label: 'الدور',
+                value: kRoles[user.role] ?? user.role,
+                accent: kGold,
+              ),
+              _InfoCard(
+                icon: CupertinoIcons.building_2_fill,
+                label: 'الشعبة',
+                value: kDivisionNames[user.division] ??
+                    kDivisions[user.division] ??
+                    user.division,
+              ),
+              _InfoCard(
+                icon: CupertinoIcons.checkmark_seal_fill,
+                label: 'الحالة',
+                value: _statusLabel(user.status),
+                accent: user.status == 'active' ? kPrimary2 : kRed,
+              ),
+            ]),
           ],
         );
-        final lifecycle = _InfoSection(
-          title: 'الإنشاء والإغلاق',
-          subtitle: 'سجل إنشاء الحساب والجهات المسؤولة عنه',
-          icon: CupertinoIcons.calendar_badge_plus,
-          accent: kGold,
-          children: [
-            _InfoCard(
-              icon: CupertinoIcons.person_2_fill,
-              label: 'المسؤول المباشر',
-              value: manager?.name ?? '—',
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.calendar_circle,
-              label: 'تاريخ إنشاء الحساب',
-              value: createdStamp,
-            ),
-            _InfoCard(
-              icon: CupertinoIcons.person_badge_plus,
-              label: 'أنشئ من قبل',
-              value: user.createdBy,
-            ),
-            if (user.closedAt.isNotEmpty)
-              _InfoCard(
-                icon: CupertinoIcons.lock_fill,
-                label: 'تاريخ الإغلاق',
-                value: _stamp(user.closedAt),
-                accent: kRed,
-              ),
-            if (user.closedBy.isNotEmpty)
-              _InfoCard(
-                icon: CupertinoIcons.xmark_circle_fill,
-                label: 'أغلقه',
-                value: user.closedBy,
-                accent: kRed,
-              ),
-            if (user.closureReason.isNotEmpty)
-              _InfoCard(
-                icon: CupertinoIcons.exclamationmark_circle,
-                label: 'سبب الإغلاق',
-                value: user.closureReason,
-                accent: kRed,
-              ),
-          ],
-        );
+        final lifecycle = canManageUsers
+            ? _CollapsibleSection(
+                title: 'الإنشاء والإغلاق',
+                subtitle: 'سجل إنشاء الحساب والجهات المسؤولة عنه',
+                icon: CupertinoIcons.calendar_badge_plus,
+                accent: kGold,
+                children: [
+                  const SizedBox(height: 8),
+                  InfoTileGrid(tiles: [
+                    _InfoCard(
+                      icon: CupertinoIcons.person_2_fill,
+                      label: 'المسؤول المباشر',
+                      value: manager?.name ?? '—',
+                    ),
+                    _InfoCard(
+                      icon: CupertinoIcons.calendar_circle,
+                      label: 'تاريخ إنشاء الحساب',
+                      value: createdStamp,
+                    ),
+                    _InfoCard(
+                      icon: CupertinoIcons.person_badge_plus,
+                      label: 'أنشئ من قبل',
+                      value: user.createdBy,
+                    ),
+                    if (user.closedAt.isNotEmpty)
+                      _InfoCard(
+                        icon: CupertinoIcons.lock_fill,
+                        label: 'تاريخ الإغلاق',
+                        value: _stamp(user.closedAt),
+                        accent: kRed,
+                      ),
+                    if (user.closedBy.isNotEmpty)
+                      _InfoCard(
+                        icon: CupertinoIcons.xmark_circle_fill,
+                        label: 'أغلقه',
+                        value: user.closedBy,
+                        accent: kRed,
+                      ),
+                    if (user.closureReason.isNotEmpty)
+                      _InfoCard(
+                        icon: CupertinoIcons.exclamationmark_circle,
+                        label: 'سبب الإغلاق',
+                        value: user.closureReason,
+                        accent: kRed,
+                      ),
+                  ]),
+                ],
+              )
+            : null;
         final details = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             account,
-            const SizedBox(height: 18),
-            lifecycle,
+            if (lifecycle != null) ...[
+              const SizedBox(height: 18),
+              lifecycle,
+            ],
           ],
         );
         final side = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _PermissionsCard(
-              permissions: permissions,
-              fullAccess: user.role == 'sysadmin',
+            _CollapsibleSection(
+              title: 'الصلاحيات',
+              subtitle: user.role == 'sysadmin'
+                  ? 'مدير النظام يملك كل الصلاحيات'
+                  : 'الصلاحيات المسندة لهذا الحساب',
+              icon: CupertinoIcons.lock_shield_fill,
+              accent: kGold,
+              trailing: '${permissions.length}',
+              defaultOpen: true,
+              children: [
+                const SizedBox(height: 8),
+                if (user.role == 'sysadmin')
+                  Container(
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: kGold.withValues(alpha: .35)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(CupertinoIcons.sparkles,
+                            size: 17, color: kGold),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'صلاحيات كاملة على النظام بوصفه مدير النظام',
+                            style: TextStyle(
+                              color: context.p.isDark
+                                  ? const Color(0xFFE9CEA8)
+                                  : const Color(0xFF6B4A0C),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (permissions.isEmpty)
+                  Text(
+                    'لا توجد صلاحيات مسندة لهذا الحساب.',
+                    style: TextStyle(color: context.p.muted, fontSize: 13),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final permission in permissions)
+                        Container(
+                          padding:
+                              const EdgeInsetsDirectional.fromSTEB(8, 6, 12, 6),
+                          decoration: BoxDecoration(
+                            color: context.p.isDark
+                                ? Colors.white.withValues(alpha: .06)
+                                : const Color(0xFFF4F6F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: context.p.isDark
+                                  ? const Color(0xFF29302F)
+                                  : const Color(0xFFE0E7E5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(CupertinoIcons.checkmark_circle_fill,
+                                  size: 14, color: kPrimary2),
+                              const SizedBox(width: 6),
+                              Text(
+                                kPerms[permission] ?? permission,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
             ),
           ],
         );
@@ -246,7 +339,7 @@ class ProfileScreen extends StatelessWidget {
 
   static String _stamp(String value) {
     final date = DateTime.tryParse(value);
-    return date == null ? '—' : fmtDT(date);
+    return date == null ? '—' : fmtDT12(date);
   }
 }
 
@@ -601,72 +694,138 @@ class _SectionHeader extends StatelessWidget {
 }
 
 /// بطاقة معلومة أنيقة (صف لافتة أيقونة).
-class _InfoSection extends StatelessWidget {
+/// بطاقة قسم قابلة للطي/الفتح مع تأشير واضح وزر سحب.
+class _CollapsibleSection extends StatefulWidget {
   final String title, subtitle;
   final IconData icon;
   final Color accent;
+  final String? trailing;
+  final bool defaultOpen;
   final List<Widget> children;
-  const _InfoSection({
+  const _CollapsibleSection({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.accent,
     required this.children,
+    this.trailing,
+    this.defaultOpen = true,
   });
 
   @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _open = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _open = widget.defaultOpen;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final dark = context.p.isDark;
     return AppCard(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [
-                      accent.withValues(alpha: .26),
-                      accent.withValues(alpha: .08),
-                    ],
+          Semantics(
+            button: true,
+            expanded: _open,
+            label: '${_open ? 'طي' : 'فتح'} ${widget.title}',
+            child: InkWell(
+              onTap: () => setState(() => _open = !_open),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 8),
+                child: Row(children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                        colors: [
+                          widget.accent.withValues(alpha: .26),
+                          widget.accent.withValues(alpha: .08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(widget.icon, size: 20, color: widget.accent),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, size: 20, color: accent),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Text(
+                          widget.subtitle,
+                          style: TextStyle(
+                            color: context.p.muted,
+                            fontSize: 11.5,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (widget.trailing != null)
+                    Container(
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
+                      margin: const EdgeInsetsDirectional.only(end: 8),
+                      decoration: BoxDecoration(
+                        color: dark
+                            ? Colors.white.withValues(alpha: .08)
+                            : const Color(0xFFF0F4F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        widget.trailing!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: context.p.muted,
-                        fontSize: 11.5,
-                        height: 1.4,
-                      ),
+                  AnimatedRotation(
+                    turns: _open ? .5 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeInOutCubic,
+                    child: Icon(
+                      CupertinoIcons.chevron_down,
+                      size: 19,
+                      color: context.p.muted,
                     ),
-                  ],
-                ),
+                  ),
+                ]),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16),
-          InfoTileGrid(tiles: children),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeInOutCubic,
+            alignment: Alignment.topCenter,
+            child: _open
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: widget.children,
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -781,163 +940,6 @@ class _Stat {
   final bool warn;
   const _Stat(this.label, this.value, this.icon, this.color,
       {this.warn = false});
-}
-
-/// بطاقة الصلاحيات: شارة عدد وفئات بأيقونات.
-class _PermissionsCard extends StatelessWidget {
-  final List<String> permissions;
-  final bool fullAccess;
-  const _PermissionsCard({
-    required this.permissions,
-    required this.fullAccess,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = context.p.isDark;
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [Color(0xFFA98545), Color(0xFF7C5A1E)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(CupertinoIcons.lock_shield_fill,
-                    size: 20, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'الصلاحيات',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    Text(
-                      fullAccess
-                          ? 'مدير النظام يملك كل الصلاحيات'
-                          : 'الصلاحيات المسندة لهذا الحساب',
-                      style: TextStyle(
-                        color: context.p.muted,
-                        fontSize: 11.5,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
-                decoration: BoxDecoration(
-                  color: dark
-                      ? Colors.white.withValues(alpha: .08)
-                      : const Color(0xFFF0F4F2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${permissions.length}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          if (fullAccess)
-            Container(
-              padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-              decoration: BoxDecoration(
-                color: kGold.withValues(alpha: dark ? .16 : .10),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: kGold.withValues(alpha: .35)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(CupertinoIcons.sparkles,
-                      size: 17, color: kGold),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'صلاحيات كاملة على النظام بوصفه مدير النظام',
-                      style: TextStyle(
-                        color: dark ? const Color(0xFFE9CEA8) : const Color(0xFF6B4A0C),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (permissions.isEmpty)
-            Text(
-              'لا توجد صلاحيات مسندة لهذا الحساب.',
-              style: TextStyle(color: context.p.muted, fontSize: 13),
-            )
-          else ...[
-            if (!fullAccess)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final permission in permissions)
-                    Container(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(8, 6, 12, 6),
-                      decoration: BoxDecoration(
-                        color: dark
-                            ? Colors.white.withValues(alpha: .06)
-                            : const Color(0xFFF4F6F5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: dark
-                              ? const Color(0xFF29302F)
-                              : const Color(0xFFE0E7E5),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(CupertinoIcons.checkmark_circle_fill,
-                              size: 14, color: kPrimary2),
-                          const SizedBox(width: 6),
-                          Text(
-                            kPerms[permission] ?? permission,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 /// قسم المحاضر التي أنشأها المستخدم.
