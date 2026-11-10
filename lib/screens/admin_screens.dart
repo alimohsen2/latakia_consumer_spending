@@ -1062,7 +1062,7 @@ class _UsersScreenState extends State<UsersScreen> {
             'الحالة',
             'إجراءات',
           ],
-          flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+          flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3],
           rows: [
             for (var index = 0; index < list.length; index++)
               [
@@ -1107,6 +1107,31 @@ class _UsersScreenState extends State<UsersScreen> {
                       onPressed: () => _edit(st, list[index]),
                       icon: CupertinoIcons.pencil,
                       color: kPrimary2,
+                      size: 40,
+                    ),
+                  if (list[index].id != st.me?.id && list[index].status != 'closed')
+                    _CircleIconButton(
+                      tooltip:
+                          list[index].active ? 'تعطيل مؤقتًا' : 'إعادة تفعيل',
+                      onPressed: () {
+                        final error = st.setUserActive(
+                            list[index], !list[index].active);
+                        if (error != null) toast(context, error);
+                      },
+                      icon: list[index].active
+                          ? CupertinoIcons.pause_circle_fill
+                          : CupertinoIcons.checkmark_seal_fill,
+                      color: list[index].active
+                          ? kGold
+                          : const Color(0xFF34C759),
+                      size: 40,
+                    ),
+                  if (list[index].id != st.me?.id && list[index].status != 'closed')
+                    _CircleIconButton(
+                      tooltip: 'إغلاق الحساب نهائيًا',
+                      onPressed: () => _closeUser(st, list[index]),
+                      icon: CupertinoIcons.lock_fill,
+                      color: kRed,
                       size: 40,
                     ),
                   ],
