@@ -484,7 +484,8 @@ class ActiveUsersScreen extends StatelessWidget {
 class _UsersScreenState extends State<UsersScreen> {
   String role = '', div = '';
   String status = '';
-  String view = 'cards';
+  String view = 'table';
+  int cardColumns = 2;
   final query = TextEditingController();
 
   @override
@@ -954,6 +955,11 @@ class _UsersScreenState extends State<UsersScreen> {
               ),
               Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
                   (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
+              if (view == 'cards') ...[
+                const SizedBox(width: 8),
+                Seg(const ['١ عمود', '٢ عمود', '٣ أعمدة'], cardColumns - 1,
+                    (i) => setState(() => cardColumns = i + 1)),
+              ],
             ]),
             const SizedBox(height: 14),
             TextField(
@@ -1045,49 +1051,56 @@ class _UsersScreenState extends State<UsersScreen> {
       if (view == 'table' && list.isNotEmpty)
         GridTable(
           heads: const [
+            '#',
+            'أيقونة الدور',
             'المستخدم',
             'اسم المستخدم',
             'الدور',
             'الشعبة',
             'المسؤول',
+            'رقم الموبايل',
             'تاريخ الإنشاء',
             'وقت الإنشاء',
             'الحالة',
             '',
           ],
-          flex: const [2, 2, 2, 2, 2, 2, 2, 2, 2],
+          flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
           rows: [
-            for (final u in list)
+            for (var index = 0; index < list.length; index++)
               [
-                cellText(u.name, bold: true),
-                cellText(u.username),
-                cellText(kRoles[u.role] ?? u.role),
-                cellText(kDivisionNames[u.division] ??
-                    kDivisions[u.division] ??
-                    u.division),
-                cellText(_managerNameOf(u)),
-                cellText(_stampDate(u.createdAt)),
-                cellText(_stampTime(u.createdAt)),
-                StatusBadge(_userStatusLabel(u.status)),
+                cellText('${index + 1}', bold: true),
+                _RoleIcon(role: list[index].role),
+                cellText(list[index].name, bold: true),
+                cellText(list[index].username),
+                cellText(kRoles[list[index].role] ?? list[index].role),
+                cellText(kDivisionNames[list[index].division] ??
+                    kDivisions[list[index].division] ??
+                    list[index].division),
+                cellText(_managerNameOf(list[index])),
+                cellText(list[index].phone.isEmpty ? '—' : list[index].phone),
+                cellText(_stampDate(list[index].createdAt)),
+                cellText(_stampTime(list[index].createdAt)),
+                StatusBadge(_userStatusLabel(list[index].status)),
                 Wrap(spacing: 8, children: [
                   _CircleIconButton(
                     tooltip: 'صفحة المستخدم',
-                    onPressed: () => context.go('/users/${u.id}/profile'),
+                    onPressed: () =>
+                        context.go('/users/${list[index].id}/profile'),
                     icon: CupertinoIcons.person_crop_circle_fill,
                     color: kPrimary2,
                     size: 40,
                   ),
                   _CircleIconButton(
                     tooltip: 'تفاصيل وسجل الحساب',
-                    onPressed: () => _showAccountHistory(u),
+                    onPressed: () => _showAccountHistory(list[index]),
                     icon: CupertinoIcons.info,
                     color: kGold,
                     size: 40,
                   ),
-                  if (u.status != 'closed')
+                  if (list[index].status != 'closed')
                     _CircleIconButton(
                       tooltip: 'تعديل المستخدم',
-                      onPressed: () => _edit(st, u),
+                      onPressed: () => _edit(st, list[index]),
                       icon: CupertinoIcons.pencil,
                       color: kPrimary2,
                       size: 40,
@@ -1120,23 +1133,41 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         )
       else
-        for (final u in list)
-          _UserCard(
-            store: st,
-            user: u,
-            managerName: _managerNameOf(u),
-            onHistory: () => _showAccountHistory(u),
-            onEdit: u.status == 'closed' ? null : () => _edit(st, u),
-            onToggleActive: u.id != st.me?.id && u.status != 'closed'
-                ? () {
-                    final error = st.setUserActive(u, !u.active);
-                    if (error != null) toast(context, error);
-                  }
-                : null,
-            onClose: u.id != st.me?.id && u.status != 'closed'
-                ? () => _closeUser(st, u)
-                : null,
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cols = cardColumns;
+            const double spacing = 12.0;
+            final itemWidth =
+                (constraints.maxWidth - spacing * (cols - 1)) / cols;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (final u in list)
+                  SizedBox(
+                    width: itemWidth,
+                    child: _UserCard(
+                      store: st,
+                      user: u,
+                      managerName: _managerNameOf(u),
+                      onHistory: () => _showAccountHistory(u),
+                      onEdit: u.status == 'closed' ? null : () => _edit(st, u),
+                      onToggleActive:
+                          u.id != st.me?.id && u.status != 'closed'
+                              ? () {
+                                  final error = st.setUserActive(u, !u.active);
+                                  if (error != null) toast(context, error);
+                                }
+                              : null,
+                      onClose: u.id != st.me?.id && u.status != 'closed'
+                          ? () => _closeUser(st, u)
+                          : null,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
     ]);
 
   }
@@ -3319,7 +3350,7 @@ class _UserCard extends StatelessWidget {
         kDivisions[user.division] ??
         user.division;
     return AppCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -3327,38 +3358,40 @@ class _UserCard extends StatelessWidget {
             _UserAvatar(
               store: store,
               user: user,
-              radius: 30,
+              radius: 36,
               statusColor: _statusColor,
               borderColor: context.p.surface,
             ),
-            const SizedBox(width: 13),
+            const SizedBox(width: 18),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
+                    spacing: 10,
+                    runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        user.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800),
+                      Flexible(
+                        child: Text(
+                          user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w800),
+                        ),
                       ),
                       StatusBadge(_userStatusLabel(user.status)),
                       if (user.passwordChangeRequired)
                         const StatusBadge('تغيير كلمة المرور مطلوب'),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 6),
                   Text(
                     '@${user.username}',
                     style: TextStyle(
                       color: context.p.muted,
-                      fontSize: 12.5,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -3366,8 +3399,8 @@ class _UserCard extends StatelessWidget {
               ),
             ),
           ]),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
+          const SizedBox(height: 18),
+          Wrap(spacing: 10, runSpacing: 10, children: [
             _MetaChip(
                 icon: CupertinoIcons.briefcase_fill,
                 label: kRoles[user.role] ?? user.role,
@@ -3382,10 +3415,10 @@ class _UserCard extends StatelessWidget {
                 label: 'المسؤول: $managerName',
                 color: kGold),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Wrap(
-            spacing: 14,
-            runSpacing: 6,
+            spacing: 16,
+            runSpacing: 8,
             children: [
               _MetaItem(
                   icon: CupertinoIcons.phone_fill,
@@ -3401,9 +3434,9 @@ class _UserCard extends StatelessWidget {
                   text: 'من: ${creator.isEmpty ? 'غير محدد' : creator}'),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           Divider(height: 1, color: context.p.border),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -4300,6 +4333,48 @@ class _CircleIconButton extends StatelessWidget {
         hoverColor: color.withValues(alpha: .2),
         side: BorderSide(color: color.withValues(alpha: .35), width: 1),
       ),
+    );
+  }
+}
+
+/// أيقونة فخمة للدور — دائرة بتدرج لوني وأيقونة متناسقة.
+class _RoleIcon extends StatelessWidget {
+  final String role;
+  const _RoleIcon({required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    final roles = kRoles.keys.toList();
+    final index = roles.indexOf(role);
+    final accentIndex = index < 0 ? 0 : index;
+    final color = _rolePalette[accentIndex % _rolePalette.length];
+    final icon = _roleIcons[role] ?? CupertinoIcons.person_fill;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            color.withValues(alpha: .36),
+            color.withValues(alpha: .12),
+          ],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: color.withValues(alpha: .45),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: .25),
+            blurRadius: 6,
+            spreadRadius: -1,
+          ),
+        ],
+      ),
+      child: Icon(icon, size: 22, color: color),
     );
   }
 }
