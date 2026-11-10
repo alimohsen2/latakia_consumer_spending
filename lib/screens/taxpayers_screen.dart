@@ -24,7 +24,7 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
   String mode = 'all', cat = '', status = '';
   final sel = <String>{};
   int page = 0;
-  bool tableView = false;
+  bool tableView = true;
   static const per = 10;
 
   @override
@@ -543,158 +543,93 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
       },
     );
 
-    final taxpayerTable = AppCard(
-      padding: EdgeInsets.zero,
-      child: shown.isEmpty
-          ? Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Text('لا توجد نتائج مطابقة',
-                    style: TextStyle(color: context.p.muted)),
-              ),
-            )
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26),
-                child: DataTable(
-                  headingRowHeight: 54,
-                  dataRowMinHeight: 64,
-                  dataRowMaxHeight: 72,
-                  horizontalMargin: 20,
-                  columnSpacing: 28,
-                  dividerThickness: .6,
-                  headingRowColor: WidgetStatePropertyAll(
-                    Color.alphaBlend(
-                      kPrimary.withValues(alpha: dark ? .20 : .075),
-                      context.p.surface,
-                    ),
-                  ),
-                  headingTextStyle: TextStyle(
-                    color: dark ? const Color(0xFFB7E2D9) : kPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  dataTextStyle: TextStyle(
-                    color: context.p.text,
-                    fontSize: 13,
-                  ),
-                  columns: [
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.building_2_fill,
-                            title: 'المنشأة / المالك')),
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.tag_fill, title: 'الفئة')),
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.number,
-                            title: 'الرقم الضريبي')),
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.location_fill,
-                            title: 'العنوان')),
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.checkmark_seal_fill,
-                            title: 'الحالة')),
-                    DataColumn(
-                        label: _TaxpayerTableHeader(
-                            icon: CupertinoIcons.ellipsis_circle_fill,
-                            title: 'الإجراءات')),
-                  ],
-                  rows: [
-                    for (final entry in shown.indexed)
-                      DataRow(
-                        selected: sel.contains(entry.$2.id),
-                        color: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return kPrimary.withValues(alpha: dark ? .25 : .10);
-                          }
-                          if (states.contains(WidgetState.hovered)) {
-                            return kPrimary.withValues(alpha: dark ? .12 : .05);
-                          }
-                          if (entry.$1.isOdd) {
-                            return Color.alphaBlend(
-                              Colors.black.withValues(alpha: dark ? .10 : .025),
-                              context.p.surface,
-                            );
-                          }
-                          return context.p.surface;
-                        }),
-                        onSelectChanged: (selected) => setState(
-                          () => selected == true
-                              ? sel.add(entry.$2.id)
-                              : sel.remove(entry.$2.id),
-                        ),
-                        cells: [
-                          DataCell(
-                            SizedBox(
-                              width: 190,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    entry.$2.name.isEmpty
-                                        ? 'منشأة بلا اسم'
-                                        : entry.$2.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    entry.$2.owner.isEmpty
-                                        ? 'لم يُسجّل اسم المالك'
-                                        : entry.$2.owner,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        color: context.p.muted, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          DataCell(Text(entry.$2.category)),
-                          DataCell(Text(entry.$2.taxNo)),
-                          DataCell(
-                            SizedBox(
-                              width: 180,
-                              child: Text(
-                                entry.$2.address.isEmpty
-                                    ? 'غير محدد'
-                                    : entry.$2.address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          DataCell(StatusBadge(entry.$2.status)),
-                          DataCell(
-                              Row(mainAxisSize: MainAxisSize.min, children: [
-                            IconButton(
-                              tooltip: 'فتح الأضبارة',
-                              onPressed: () =>
-                                  context.go('/taxpayers/${entry.$2.id}/file'),
-                              icon: const Icon(CupertinoIcons.folder, size: 18),
-                            ),
-                            IconButton(
-                              tooltip: 'عرض التفاصيل',
-                              onPressed: () =>
-                                  context.go('/taxpayers/${entry.$2.id}'),
-                              icon: const Icon(CupertinoIcons.arrow_up_right,
-                                  size: 18),
-                            ),
-                          ])),
-                        ],
-                      ),
-                  ],
-                ),
+    final taxpayerTable = GridTable(
+      minWidth: 940,
+      onRowTap: (index) =>
+          context.go('/taxpayers/${shown[index].id}'),
+      heads: const [
+        '',
+        'المنشأة',
+        'الفئة',
+        'الرقم الضريبي',
+        'العنوان',
+        'الحالة',
+        'إجراءات',
+      ],
+      flex: const [1, 4, 2, 2, 3, 2, 2],
+      rows: [
+        for (final t in shown)
+          [
+            Center(
+              child: Checkbox(
+                value: sel.contains(t.id),
+                onChanged: (v) => setState(() {
+                  if (v == true) {
+                    sel.add(t.id);
+                  } else {
+                    sel.remove(t.id);
+                  }
+                }),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    t.name.isEmpty ? 'منشأة بلا اسم' : t.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13.5),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    t.owner.isEmpty ? 'لم يُسجّل اسم المالك' : t.owner,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: context.p.muted, fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            cellText(t.category),
+            cellText(t.taxNo),
+            SizedBox(
+              width: 160,
+              child: Text(
+                t.address.isEmpty ? 'غير محدد' : t.address,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            StatusBadge(t.status),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TaxpayerAction(
+                  tooltip: 'فتح الأضبارة',
+                  icon: CupertinoIcons.folder,
+                  color: kGold,
+                  onPressed: () => context.go('/taxpayers/${t.id}/file'),
+                ),
+                const SizedBox(width: 8),
+                _TaxpayerAction(
+                  tooltip: 'عرض التفاصيل',
+                  icon: CupertinoIcons.arrow_up_right,
+                  color: kPrimary2,
+                  onPressed: () => context.go('/taxpayers/${t.id}'),
+                ),
+              ],
+            ),
+          ],
+      ],
+      empty: 'لا توجد نتائج مطابقة — جرّب تغيير البحث أو الفلاتر.',
     );
 
     final animatedTable = AnimatedSwitcher(
@@ -953,26 +888,41 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
   }
 }
 
-class _TaxpayerTableHeader extends StatelessWidget {
+/// زر دائري بأيقونة — بنمط أزرار جدول المستخدمين.
+class _TaxpayerAction extends StatelessWidget {
+  final String tooltip;
   final IconData icon;
-  final String title;
-
-  const _TaxpayerTableHeader({required this.icon, required this.title});
+  final Color color;
+  final VoidCallback onPressed;
+  const _TaxpayerAction({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              size: 15,
-              color: context.p.isDark ? const Color(0xFFB7E2D9) : kPrimary),
-          const SizedBox(width: 7),
-          Text(title),
-        ],
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Material(
+            color: color.withValues(alpha: .10),
+            shape: CircleBorder(
+                side: BorderSide(color: color.withValues(alpha: .35))),
+            child: InkWell(
+              onTap: onPressed,
+              customBorder: const CircleBorder(),
+              child: Icon(icon, size: 19, color: color),
+            ),
+          ),
+        ),
       );
 }
 
-class _TaxpayerListCard extends StatelessWidget {
+class _TaxpayerListCard extends StatefulWidget {
+
   final Taxpayer taxpayer;
   final bool selected;
   final SalesSeries? sales;
@@ -992,9 +942,25 @@ class _TaxpayerListCard extends StatelessWidget {
   });
 
   @override
+  State<_TaxpayerListCard> createState() => _TaxpayerListCardState();
+}
+
+class _TaxpayerListCardState extends State<_TaxpayerListCard> {
+  bool _hover = false;
+
+  @override
   Widget build(BuildContext context) {
     final dark = context.p.isDark;
     final accent = dark ? const Color(0xFF8FDCCF) : kPrimary;
+    const ease = Curves.easeOutCubic;
+    const duration = Duration(milliseconds: 240);
+    final taxpayer = widget.taxpayer;
+    final selected = widget.selected;
+    final sales = widget.sales;
+    final declining = widget.declining;
+    final onSelected = widget.onSelected;
+    final onOpen = widget.onOpen;
+    final onOpenFile = widget.onOpenFile;
 
     Widget detail(String label, String value, IconData icon) => Container(
           constraints: const BoxConstraints(minWidth: 130, maxWidth: 240),
@@ -1025,30 +991,46 @@ class _TaxpayerListCard extends StatelessWidget {
           ]),
         );
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      decoration: BoxDecoration(
-        color: selected
-            ? kPrimary.withValues(alpha: dark ? .16 : .055)
-            : context.p.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: selected ? accent : context.p.border,
-            width: selected ? 1.4 : .7),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? .12 : .035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: duration,
+        curve: ease,
+        transform: Matrix4.translationValues(0, _hover ? -4 : 0, 0)
+          ..multiply(Matrix4.diagonal3Values(
+              _hover ? 1.012 : 1.0, _hover ? 1.012 : 1.0, 1.0)),
+        transformAlignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _hover
+              ? kGold.withValues(alpha: dark ? .12 : .06)
+              : selected
+                  ? kPrimary.withValues(alpha: dark ? .16 : .055)
+                  : context.p.surface,
           borderRadius: BorderRadius.circular(20),
-          onTap: onOpen,
+          border: Border.all(
+              color: _hover
+                  ? kGold.withValues(alpha: .85)
+                  : selected
+                      ? accent
+                      : context.p.border,
+              width: (_hover || selected) ? 1.5 : .7),
+          boxShadow: [
+            BoxShadow(
+              color: _hover
+                  ? kGold.withValues(alpha: dark ? .30 : .38)
+                  : Colors.black.withValues(alpha: dark ? .12 : .035),
+              blurRadius: _hover ? 26 : 12,
+              offset: _hover ? const Offset(0, 12) : const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: onOpen,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1160,7 +1142,7 @@ class _TaxpayerListCard extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: LineChart(
-                          [sales!.monthly],
+                          [sales.monthly],
                           height: 30,
                           mini: true,
                           colors: [declining ? kRed : kPrimary2],
@@ -1170,28 +1152,28 @@ class _TaxpayerListCard extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 12),
-                Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    runAlignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      TextButton.icon(
-                        onPressed: onOpenFile,
-                        icon: const Icon(CupertinoIcons.folder, size: 16),
-                        label: const Text('الأضبارة'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: onOpen,
-                        icon:
-                            const Icon(CupertinoIcons.arrow_up_right, size: 16),
-                        label: const Text('عرض التفاصيل'),
-                      ),
-                    ]),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _TaxpayerAction(
+                      tooltip: 'فتح الأضبارة',
+                      icon: CupertinoIcons.folder,
+                      color: kGold,
+                      onPressed: onOpenFile,
+                    ),
+                    _TaxpayerAction(
+                      tooltip: 'عرض التفاصيل',
+                      icon: CupertinoIcons.arrow_up_right,
+                      color: kPrimary2,
+                      onPressed: onOpen,
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
+      ),
       ),
     );
   }

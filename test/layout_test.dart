@@ -372,7 +372,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('الرقم الضريبي'), findsWidgets);
-    expect(find.text('عرض التفاصيل'), findsWidgets);
+    expect(find.byTooltip('عرض التفاصيل'), findsWidgets);
+    expect(find.byTooltip('فتح الأضبارة'), findsWidgets);
     expect(find.text('اسم المنشأة'), findsNothing);
   });
 
