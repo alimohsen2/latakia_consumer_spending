@@ -10,6 +10,58 @@ import '../data/models.dart';
 import '../data/store.dart';
 import '../widgets/common.dart';
 
+/// حوار تعديل الحساب — متاح لأصحاب صلاحية إدارة المستخدمين.
+void showEditUserDialog(BuildContext context, AppStore store, AppUser user) {
+  showDialog<void>(
+    context: context,
+    builder: (_) => _EditUserDialog(store: store, user: user),
+  );
+}
+
+/// إغلاق الحساب نهائيًا بخطوتين: كلمة المرور + تأكيد إضافي ثم تُحفظ فورًا.
+/// تُستخدم من جدول المستخدمين ومن صفحة الملف الشخصي.
+Future<void> closeAccountWithConfirmation(
+    BuildContext context, AppStore st, AppUser user) async {
+  final credentials = await showDialog<({String reason, String password})>(
+    context: context,
+    builder: (_) => const _CloseAccountDialog(),
+  );
+  if (credentials == null || !context.mounted) return;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('التأكيد الثاني للإغلاق النهائي'),
+      content: Text(
+        'هل أنت متأكد من إغلاق حساب «${user.name}» نهائيًا؟ '
+        'لن يمكن إعادة تفعيله، وستبقى سجلاته محفوظة.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('أؤكد الإغلاق النهائي'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  try {
+    final result = await st.closeUser(
+      user.id,
+      credentials.reason,
+      adminPassword: credentials.password,
+    );
+    if (context.mounted) {
+      toast(context, result ?? 'أُغلق الحساب نهائيًا وحُفظت جميع سجلاته');
+    }
+  } catch (error) {
+    if (context.mounted) toast(context, 'تعذر حفظ إغلاق الحساب: $error');
+  }
+}
+
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
 
@@ -819,47 +871,6 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Future<void> _closeUser(AppStore st, AppUser user) async {
-    final credentials = await showDialog<({String reason, String password})>(
-      context: context,
-      builder: (_) => const _CloseAccountDialog(),
-    );
-    if (credentials == null || !mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('التأكيد الثاني للإغلاق النهائي'),
-        content: Text(
-          'هل أنت متأكد من إغلاق حساب «${user.name}» نهائيًا؟ '
-          'لن يمكن إعادة تفعيله، وستبقى سجلاته محفوظة.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('أؤكد الإغلاق النهائي'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      final result = await st.closeUser(
-        user.id,
-        credentials.reason,
-        adminPassword: credentials.password,
-      );
-      if (mounted) {
-        toast(context, result ?? 'أُغلق الحساب نهائيًا وحُفظت جميع سجلاته');
-      }
-    } catch (error) {
-      if (mounted) toast(context, 'تعذر حفظ إغلاق الحساب: $error');
-    }
-  }
-
   String _managerNameOf(AppUser user) {
     if (!roleHasManager(user.role)) return '';
     for (final candidate in context.read<AppStore>().users) {
@@ -1129,7 +1140,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   if (list[index].id != st.me?.id && list[index].status != 'closed')
                     _CircleIconButton(
                       tooltip: 'إغلاق الحساب نهائيًا',
-                      onPressed: () => _closeUser(st, list[index]),
+                      onPressed: () => closeAccountWithConfirmation(context, st, list[index]),
                       icon: CupertinoIcons.lock_fill,
                       color: kRed,
                       size: 40,
@@ -1190,7 +1201,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                 }
                               : null,
                       onClose: u.id != st.me?.id && u.status != 'closed'
-                          ? () => _closeUser(st, u)
+                          ? () => closeAccountWithConfirmation(context, st, u)
                           : null,
                     ),
                   ),

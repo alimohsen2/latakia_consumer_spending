@@ -11,6 +11,7 @@ import '../core/util.dart';
 import '../data/models.dart';
 import '../data/store.dart';
 import '../widgets/common.dart';
+import 'admin_screens.dart' show showEditUserDialog, closeAccountWithConfirmation;
 
 /// ملف المستخدم: بيانات الحساب والصلاحيات والمحاضر التي أنشأها.
 /// تُعرض للمستخدم الحالي عبر `/profile`، ويمكن لمدير المستخدمين فتح ملف أي
@@ -86,6 +87,12 @@ class ProfileScreen extends StatelessWidget {
         completed: completed,
         fines: fines,
       ),
+      if (canManageUsers && user.status != 'closed')
+        _AccountActionsCard(
+          store: st,
+          user: user,
+          isSelf: isSelf,
+        ),
       _ProfileStatsRow(
         reportsCount: reports.length,
         inProgress: inProgress,
@@ -1426,6 +1433,164 @@ class _PermissionRow extends StatelessWidget {
             visualDensity: VisualDensity.compact,
           ),
       ]),
+    );
+  }
+}
+/// بطاقة «إجراءات الحساب» — نفس أزرار جدول المستخدمين: تعديل الحساب،
+/// تعطيله مؤقتًا وإعادة تفعيله، أو إغلاقه نهائيًا بعد التحقق. تظهر للأدمن فقط.
+class _AccountActionsCard extends StatelessWidget {
+  final AppStore store;
+  final AppUser user;
+  final bool isSelf;
+  const _AccountActionsCard({
+    required this.store,
+    required this.user,
+    required this.isSelf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final header = Row(
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [kGold, Color(0xFFB8860B)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: kGold.withValues(alpha: .35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(CupertinoIcons.shield_fill,
+              size: 22, color: Colors.white),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('إجراءات الحساب',
+                  style:
+                      TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              Text('تعديل، تعطيل مؤقت أو إغلاق نهائي',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: context.p.muted, fontSize: 11.5)),
+            ],
+          ),
+        ),
+      ],
+    );
+    final actions = Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _ProfileActionPill(
+          label: 'تعديل الحساب',
+          icon: CupertinoIcons.pencil,
+          color: kPrimary2,
+          onTap: () => showEditUserDialog(context, store, user),
+        ),
+        if (!isSelf)
+          _ProfileActionPill(
+            label: user.active ? 'تعطيل مؤقتًا' : 'إعادة تفعيل',
+            icon: user.active
+                ? CupertinoIcons.pause_circle_fill
+                : CupertinoIcons.checkmark_seal_fill,
+            color: user.active ? kGold : const Color(0xFF34C759),
+            onTap: () {
+              final error = store.setUserActive(user, !user.active);
+              if (error != null) toast(context, error);
+            },
+          ),
+        if (!isSelf)
+          _ProfileActionPill(
+            label: 'إغلاق الحساب نهائيًا',
+            icon: CupertinoIcons.lock_fill,
+            color: kRed,
+            onTap: () => closeAccountWithConfirmation(context, store, user),
+          ),
+      ],
+    );
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 16),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 760;
+        if (wide) {
+          return Row(children: [
+            Expanded(flex: 4, child: header),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 5,
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: actions,
+              ),
+            ),
+          ]);
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            header,
+            const SizedBox(height: 12),
+            actions,
+          ],
+        );
+      }),
+    );
+  }
+}
+
+/// زر ممثّل لإجراء — كبسولة بحدود ولون الإجراء.
+class _ProfileActionPill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  const _ProfileActionPill({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withValues(alpha: .10),
+      shape: StadiumBorder(
+        side: BorderSide(color: color.withValues(alpha: .35)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 19, color: color),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                    color: color, fontSize: 13, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
