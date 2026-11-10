@@ -500,64 +500,239 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   Future<void> _showAccountHistory(AppUser user) async {
-    String stamp(String value) {
-      final date = DateTime.tryParse(value);
-      return date == null ? 'غير محدد' : fmtDT(date);
+    AppUser? findUser(String id) {
+      for (final candidate in context.read<AppStore>().users) {
+        if (candidate.id == id) return candidate;
+      }
+      return null;
     }
+
+    final manager = findUser(user.managerId);
+    final creatorName = user.createdBy.trim().isEmpty
+        ? 'غير محدد'
+        : user.createdBy.trim() == 'النظام'
+            ? 'النظام (بذرة أولية)'
+            : user.createdBy;
+    final statusColor = switch (user.status) {
+      'closed' => kRed,
+      'disabled' => kGold,
+      _ => const Color(0xFF34C759),
+    };
 
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('سجل الحساب: ${user.name}'),
-        content: SizedBox(
-          width: 540,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.p.surface,
+        shape:
+            ContinuousRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        titlePadding: EdgeInsets.zero,
+        contentPadding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        title: Container(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                Color(0xFF1D6054),
+                Color(0xFF17574E),
+                Color(0xFF0E3A34),
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              _UserAvatar(
+                store: context.read<AppStore>(),
+                user: user,
+                radius: 32,
+                statusColor: statusColor,
+                borderColor: Colors.white.withValues(alpha: .55),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${user.username}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .74),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _GlassChip(
+                            icon: CupertinoIcons.briefcase_fill,
+                            label: kRoles[user.role] ?? user.role),
+                        if (user.division.isNotEmpty)
+                          _GlassChip(
+                              icon: CupertinoIcons.building_2_fill,
+                              label: kDivisionNames[user.division] ??
+                                  kDivisions[user.division] ??
+                                  user.division),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 440, maxWidth: 560),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('اسم المستخدم: ${user.username}'),
-                Text('رقم الموبايل: ${user.phone.isEmpty ? '—' : user.phone}'),
-                Text('الدور: ${kRoles[user.role] ?? user.role}'),
-                Text('الشعبة: ${kDivisions[user.division] ?? '—'}'),
-                Text('المسؤول المباشر: ${_managerRole(user)}'),
-                const Divider(),
-                Text('أنشئ في: ${stamp(user.createdAt)}'),
-                Text('أنشأه: ${_creatorRole(user)}'),
-                const SizedBox(height: 8),
-                Text('الحالة الحالية: ${_statusLabel(user.status)}'),
-                for (var index = 0; index < user.statusPeriods.length; index++)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'فترة التعطيل ${index + 1}: ${stamp(user.statusPeriods[index].startedAt)}'
-                      '${user.statusPeriods[index].endedAt.isEmpty ? ' — مستمر' : ' إلى ${stamp(user.statusPeriods[index].endedAt)}'}'
-                      '\nبدأها: ${user.statusPeriods[index].startedBy}'
-                      '${user.statusPeriods[index].endedBy.isEmpty ? '' : ' · أعاد التفعيل: ${user.statusPeriods[index].endedBy}'}',
+                _HistorySection(
+                  icon: CupertinoIcons.person_crop_rectangle,
+                  title: 'بيانات الحساب',
+                  accent: kPrimary2,
+                  rows: [
+                    _InfoRow(label: 'الاسم الكامل', value: user.name),
+                    _InfoRow(label: 'اسم المستخدم', value: user.username),
+                    _InfoRow(
+                        label: 'رقم الموبايل',
+                        value: user.phone.isEmpty ? '—' : user.phone),
+                    _InfoRow(
+                        label: 'الدور',
+                        value: kRoles[user.role] ?? user.role),
+                    if (user.division.isNotEmpty)
+                      _InfoRow(
+                          label: 'الشعبة',
+                          value: kDivisionNames[user.division] ??
+                              kDivisions[user.division] ??
+                              user.division),
+                    _InfoRow(
+                        label: 'المسؤول المباشر',
+                        value: manager?.name ?? '—'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _HistorySection(
+                  icon: CupertinoIcons.calendar_badge_plus,
+                  title: 'الإنشاء والإغلاق',
+                  accent: kGold,
+                  rows: [
+                    _InfoRow(
+                      label: 'تاريخ الإنشاء',
+                      value: _stampDate(user.createdAt),
+                      icon: CupertinoIcons.calendar_circle,
                     ),
+                    _InfoRow(
+                      label: 'وقت الإنشاء',
+                      value: _stampTime(user.createdAt),
+                      icon: CupertinoIcons.clock,
+                    ),
+                    _InfoRow(
+                      label: 'أنشئ من قبل',
+                      value: creatorName,
+                      icon: CupertinoIcons.person_badge_plus,
+                    ),
+                    if (user.status == 'closed') ...[
+                      _InfoRow(
+                        label: 'تاريخ الإغلاق',
+                        value: _stamp12(user.closedAt),
+                        icon: CupertinoIcons.lock_fill,
+                        accent: kRed,
+                      ),
+                      if (user.closedBy.isNotEmpty)
+                        _InfoRow(
+                          label: 'أغلقه',
+                          value: user.closedBy,
+                          icon: CupertinoIcons.xmark_circle_fill,
+                          accent: kRed,
+                        ),
+                      if (user.closureReason.isNotEmpty)
+                        _InfoRow(
+                          label: 'سبب الإغلاق',
+                          value: user.closureReason,
+                          icon: CupertinoIcons.exclamationmark_circle,
+                          accent: kRed,
+                        ),
+                    ],
+                  ],
+                ),
+                if (user.statusPeriods.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _HistorySection(
+                    icon: CupertinoIcons.clock,
+                    title: 'سجل التعطيل وإعادة التفعيل',
+                    accent: kGold,
+                    rows: [
+                      for (var index = 0;
+                          index < user.statusPeriods.length;
+                          index++)
+                        _StatusPeriodRow(
+                          index: index + 1,
+                          period: user.statusPeriods[index],
+                        ),
+                    ],
                   ),
-                if (user.status == 'closed') ...[
-                  const Divider(),
-                  Text('أُغلق نهائيًا في: ${stamp(user.closedAt)}'),
-                  Text('أغلقه: ${user.closedBy}'),
-                  Text('سبب الإغلاق: ${user.closureReason}'),
                 ],
                 if (user.passwordChangeRequired) ...[
-                  const Divider(),
-                  const Text(
-                      'كلمة مرور مؤقتة؛ التغيير مطلوب عند الدخول التالي.'),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding:
+                        const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: kGold.withValues(
+                          alpha: context.p.isDark ? .16 : .10),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: kGold.withValues(alpha: .35)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(CupertinoIcons.exclamationmark_triangle_fill,
+                            size: 16, color: kGold),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'كلمة مرور مؤقتة — التغيير مطلوب عند الدخول التالي.',
+                            style: TextStyle(
+                              color: context.p.isDark
+                                  ? const Color(0xFFE9CEA8)
+                                  : const Color(0xFF6B4A0C),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(
+          FilledButton.icon(
             onPressed: () {
               Navigator.pop(context);
               context.go('/users/${user.id}/profile');
             },
-            child: const Text('عرض الملف الشخصي'),
+            style: FilledButton.styleFrom(backgroundColor: kPrimary),
+            icon: const Icon(CupertinoIcons.person_crop_circle_fill, size: 18),
+            label: const Text('عرض الملف الشخصي'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -567,34 +742,6 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
     );
   }
-
-  String _managerRole(AppUser user) {
-    for (final candidate in context.read<AppStore>().users) {
-      if (candidate.id == user.managerId) {
-        return kRoles[candidate.role] ?? candidate.role;
-      }
-    }
-    return '—';
-  }
-
-  String _creatorRole(AppUser user) {
-    if (user.createdBy.isEmpty) return 'غير محدد';
-    final users = context.read<AppStore>().users;
-    if (user.createdBy == 'النظام') return kRoles['sysadmin']!;
-    for (final creator in users) {
-      if (creator.name == user.createdBy ||
-          creator.username == user.createdBy) {
-        return kRoles[creator.role] ?? creator.role;
-      }
-    }
-    return 'غير محدد';
-  }
-
-  String _statusLabel(String value) => switch (value) {
-        'closed' => 'مغلق نهائيًا',
-        'disabled' => 'معطل مؤقتًا',
-        _ => 'فعال',
-      };
 
   Future<void> _closeUser(AppStore st, AppUser user) async {
     final credentials = await showDialog<({String reason, String password})>(
@@ -897,19 +1044,19 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
+  String _managerNameOf(AppUser user) {
+    for (final candidate in context.read<AppStore>().users) {
+      if (candidate.id == user.managerId) {
+        return candidate.name;
+      }
+    }
+    return '—';
+  }
+
   @override
   Widget build(BuildContext context) {
     final st = context.watch<AppStore>();
     final normalizedQuery = normAr(query.text.trim());
-    String managerRoleFor(AppUser user) {
-      for (final candidate in st.users) {
-        if (candidate.id == user.managerId) {
-          return kRoles[candidate.role] ?? candidate.role;
-        }
-      }
-      return '';
-    }
-
     final list = st.users
         .where((u) =>
             (role.isEmpty || u.role == role) &&
@@ -918,154 +1065,148 @@ class _UsersScreenState extends State<UsersScreen> {
             (normalizedQuery.isEmpty ||
                 normAr(
                   '${u.name} ${u.username} ${kRoles[u.role]} '
-                  '${kDivisionNames[u.division] ?? ''} ${managerRoleFor(u)}',
+                  '${kDivisionNames[u.division] ?? ''} ${_managerNameOf(u)}',
                 ).contains(normalizedQuery)))
         .toList();
-    String stamp(String value) {
-      final date = DateTime.tryParse(value);
-      return date == null ? 'غير محدد' : fmtDT(date);
-    }
-
-    String creationDate(String value) {
-      final date = DateTime.tryParse(value);
-      return date == null ? 'غير محدد' : fmtDate(date);
-    }
-
-    String creationTime(String value) {
-      final date = DateTime.tryParse(value);
-      if (date == null) return 'غير محدد';
-      final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-      final minute = date.minute.toString().padLeft(2, '0');
-      final period = date.hour < 12 ? 'ص' : 'م';
-      return '$hour:$minute $period';
-    }
+    final activeCount = st.users.where((u) => u.status == 'active').length;
+    final disabledCount = st.users.where((u) => u.status == 'disabled').length;
+    final closedCount = st.users.where((u) => u.status == 'closed').length;
 
     return PageBody(children: [
-      PageHeader('إدارة المستخدمين', actions: [
-        FilledButton.icon(
-          onPressed: () => _add(st),
-          icon: const Icon(CupertinoIcons.add),
-          label: const Text('إنشاء حساب'),
-        )
-      ]),
-      AppCard(
-        child: Column(children: [
-          rowOf([
-            Drop('الدور', role, {'': 'الكل', ...kRoles},
-                (v) => setState(() => role = v)),
-            Drop('الشعبة', div, {'': 'الكل', ...kDivisionNames},
-                (v) => setState(() => div = v)),
-          ]),
-          const SizedBox(height: 10),
-          rowOf([
-            Drop(
-              'الحالة',
-              status,
-              const {
-                '': 'كل الحالات',
-                'active': 'فعال',
-                'disabled': 'معطل مؤقتًا',
-                'closed': 'مغلق نهائيًا',
-              },
-              (v) => setState(() => status = v),
+      PageHeader('إدارة المستخدمين',
+          subtitle:
+              'الفريق بالكامل في مكان واحد — عرض وإنشاء وتعديل وإغلاق الحسابات',
+          actions: [
+            FilledButton.icon(
+              onPressed: () => _add(st),
+              icon: const Icon(CupertinoIcons.person_add, size: 18),
+              label: const Text('إنشاء حساب'),
             ),
-            Expanded(
-              child: TextField(
-                controller: query,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: 'بحث بالاسم أو اسم المستخدم',
-                  prefixIcon: Icon(CupertinoIcons.search),
+          ]),
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          _UserStat(
+              label: 'إجمالي الحسابات',
+              value: '${st.users.length}',
+              icon: CupertinoIcons.person_2_fill,
+              color: kPrimary2),
+          _UserStat(
+              label: 'فعالة',
+              value: '$activeCount',
+              icon: CupertinoIcons.checkmark_seal_fill,
+              color: const Color(0xFF34C759)),
+          _UserStat(
+              label: 'معطلة مؤقتًا',
+              value: '$disabledCount',
+              icon: CupertinoIcons.pause_circle_fill,
+              color: kGold),
+          _UserStat(
+              label: 'مغلقة نهائيًا',
+              value: '$closedCount',
+              icon: CupertinoIcons.lock_fill,
+              color: kRed),
+        ],
+      ),
+      AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            rowOf([
+              Drop('الدور', role, {'': 'الكل', ...kRoles},
+                  (v) => setState(() => role = v)),
+              Drop('الشعبة', div, {'': 'الكل', ...kDivisionNames},
+                  (v) => setState(() => div = v)),
+            ]),
+            const SizedBox(height: 10),
+            rowOf([
+              Drop(
+                'الحالة',
+                status,
+                const {
+                  '': 'كل الحالات',
+                  'active': 'فعال',
+                  'disabled': 'معطل مؤقتًا',
+                  'closed': 'مغلق نهائيًا',
+                },
+                (v) => setState(() => status = v),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: query,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: 'بحث بالاسم أو اسم المستخدم',
+                    prefixIcon: const Icon(CupertinoIcons.search),
+                    suffixIcon: query.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(CupertinoIcons.xmark_circle_fill,
+                                size: 19),
+                            onPressed: () {
+                              query.clear();
+                              setState(() {});
+                            },
+                          ),
+                  ),
                 ),
               ),
+            ]),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'المعروض: ${list.length} من أصل ${st.users.length} حساب · فعالة: $activeCount · معطلة: $disabledCount · مغلقة: $closedCount',
+                style: TextStyle(color: context.p.muted, fontSize: 12),
+              ),
             ),
-          ]),
-          const SizedBox(height: 8),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              'الحسابات: ${st.users.length} · نشطة: ${st.users.where((user) => user.status == 'active').length} · '
-              'معطلة مؤقتًا: ${st.users.where((user) => user.status == 'disabled').length} · '
-              'مغلقة نهائيًا: ${st.users.where((user) => user.status == 'closed').length} · '
-              'المعروض: ${list.length}',
-              style: TextStyle(color: context.p.muted, fontSize: 12),
+          ],
+        ),
+      ),
+      if (list.isEmpty)
+        AppCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 30),
+            child: Column(
+              children: [
+                Icon(CupertinoIcons.question_circle,
+                    size: 46, color: context.p.muted),
+                const SizedBox(height: 10),
+                const Text(
+                  'لا توجد حسابات مطابقة لهذه الفلاتر',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'جرّب مسح البحث أو تغيير الفلاتر.',
+                  style: TextStyle(color: context.p.muted, fontSize: 13),
+                ),
+              ],
             ),
           ),
-        ]),
-      ),
-      GridTable(
-        heads: const [
-          'الدور',
-          'الاسم الكامل',
-          'رقم الموبايل',
-          'الصورة الشخصية',
-          'اسم المستخدم',
-          'الشعبة',
-          'المسؤول المباشر',
-          'تاريخ إنشاء الحساب',
-          'وقت إنشاء الحساب',
-          'أنشئ من قبل',
-          'الحالة',
-          ''
-        ],
-        flex: const [2, 3, 2, 2, 2, 2, 3, 2, 2, 2, 2, 3],
-        rows: [
-          for (final u in list)
-            [
-              cellText(kRoles[u.role] ?? u.role),
-              cellText(u.name, bold: true),
-              cellText(u.phone.isEmpty ? '—' : u.phone),
-              _UserPhotoCell(user: u),
-              cellText(u.username),
-              cellText(kDivisionNames[u.division] ?? '—'),
-              cellText(managerRoleFor(u).isEmpty ? '—' : managerRoleFor(u)),
-              Tooltip(
-                message: [
-                  'تاريخ الإنشاء: ${stamp(u.createdAt)}',
-                  for (final period in u.statusPeriods)
-                    'تعطيل: ${stamp(period.startedAt)} — ${period.endedAt.isEmpty ? 'مستمر' : stamp(period.endedAt)}',
-                  if (u.status == 'closed') ...[
-                    'الإغلاق النهائي: ${stamp(u.closedAt)}',
-                    'أغلقه: ${u.closedBy}',
-                    'السبب: ${u.closureReason}',
-                  ],
-                ].join('\n'),
-                child: cellText(creationDate(u.createdAt)),
-              ),
-              cellText(creationTime(u.createdAt)),
-              cellText(_creatorRole(u)),
-              StatusBadge(_statusLabel(u.status)),
-              Wrap(spacing: 4, children: [
-                IconButton(
-                  tooltip: 'تفاصيل وسجل الحساب',
-                  onPressed: () => _showAccountHistory(u),
-                  icon: const Icon(CupertinoIcons.info),
-                ),
-                if (u.status != 'closed')
-                  IconButton(
-                    tooltip: 'تعديل المستخدم',
-                    onPressed: () => _edit(st, u),
-                    icon: const Icon(CupertinoIcons.pencil),
-                  ),
-                if (u.id != st.me?.id && u.status != 'closed')
-                  TextButton(
-                    onPressed: () {
-                      final error = st.setUserActive(u, !u.active);
-                      if (error != null) toast(context, error);
-                    },
-                    child: Text(u.active ? 'تعطيل' : 'تفعيل'),
-                  ),
-                if (u.id != st.me?.id && u.status != 'closed')
-                  IconButton(
-                    tooltip: 'إغلاق الحساب نهائيًا',
-                    onPressed: () => _closeUser(st, u),
-                    icon: const Icon(CupertinoIcons.lock_fill, color: kRed),
-                  ),
-              ]),
-            ],
-        ],
-      ),
+        )
+      else
+        for (final u in list)
+          _UserCard(
+            store: st,
+            user: u,
+            managerName: _managerNameOf(u),
+            onHistory: () => _showAccountHistory(u),
+            onEdit: u.status == 'closed' ? null : () => _edit(st, u),
+            onToggleActive: u.id != st.me?.id && u.status != 'closed'
+                ? () {
+                    final error = st.setUserActive(u, !u.active);
+                    if (error != null) toast(context, error);
+                  }
+                : null,
+            onClose: u.id != st.me?.id && u.status != 'closed'
+                ? () => _closeUser(st, u)
+                : null,
+          ),
     ]);
+
   }
 }
 
@@ -1144,32 +1285,6 @@ class _CloseAccountDialogState extends State<_CloseAccountDialog> {
           ),
         ],
       );
-}
-
-class _UserPhotoCell extends StatelessWidget {
-  final AppUser user;
-
-  const _UserPhotoCell({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final store = context.read<AppStore>();
-    return FutureBuilder<Uint8List?>(
-      key: ValueKey(user.photoId),
-      future:
-          user.photoId.isEmpty ? null : store.attachmentBytes(user.photoId),
-      builder: (context, snapshot) {
-        final bytes = snapshot.data;
-        return CircleAvatar(
-          radius: 20,
-          backgroundImage: bytes == null ? null : MemoryImage(bytes),
-          child: bytes == null
-              ? const Icon(CupertinoIcons.person, size: 20)
-              : null,
-        );
-      },
-    );
-  }
 }
 
 String _userPhotoMimeFor(String name) =>
@@ -2124,5 +2239,597 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ]),
       ),
     ]);
+  }
+}
+
+String _stamp12(String value) {
+  final date = DateTime.tryParse(value);
+  return date == null ? 'غير محدد' : fmtDT12(date);
+}
+
+String _stampDate(String value) {
+  final date = DateTime.tryParse(value);
+  return date == null ? 'غير محدد' : fmtDate(date);
+}
+
+String _stampTime(String value) {
+  final date = DateTime.tryParse(value);
+  return date == null ? 'غير محدد' : fmtTime12(date);
+}
+
+String _userStatusLabel(String value) => switch (value) {
+      'closed' => 'مغلق نهائيًا',
+      'disabled' => 'معطل مؤقتًا',
+      _ => 'فعال',
+    };
+
+/// صورة المستخدم الدائرية مع نقطة الحالة.
+class _UserAvatar extends StatelessWidget {
+  final AppStore store;
+  final AppUser user;
+  final double radius;
+  final Color statusColor;
+  final Color borderColor;
+  const _UserAvatar({
+    required this.store,
+    required this.user,
+    required this.radius,
+    required this.statusColor,
+    this.borderColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initial =
+        user.name.trim().isEmpty ? '؟' : user.name.trim().substring(0, 1);
+    return SizedBox(
+      width: radius * 2 + 6,
+      height: radius * 2 + 6,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: radius * 2,
+            height: radius * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [Color(0xFF2E8C7E), Color(0xFF17574E)],
+              ),
+              border: Border.all(color: borderColor, width: 1.6),
+              boxShadow: [
+                BoxShadow(
+                  color: kPrimary.withValues(alpha: .35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: FutureBuilder<Uint8List?>(
+                key: ValueKey(user.photoId),
+                future: user.photoId.isEmpty
+                    ? null
+                    : store.attachmentBytes(user.photoId),
+                builder: (context, snapshot) {
+                  final bytes = snapshot.data;
+                  return bytes == null
+                      ? Center(
+                          child: Text(
+                            initial,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: radius * .9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        )
+                      : Image.memory(bytes, fit: BoxFit.cover);
+                },
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            end: 0,
+            bottom: 2,
+            child: Container(
+              width: radius * .48,
+              height: radius * .48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: statusColor,
+                border: Border.all(color: borderColor, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شريحة زجاجية للرأس الداكن.
+class _GlassChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _GlassChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(9, 4, 11, 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: .18)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 12, color: Colors.white.withValues(alpha: .92)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .92),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ]),
+      );
+}
+
+/// شريحة معلومات ملونة (حبة).
+class _MetaChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(9, 5, 12, 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: context.p.isDark ? .16 : .08),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: .28)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.p.text,
+            ),
+          ),
+        ]),
+      );
+}
+
+/// عنصر نصي صغير مع أيقونة.
+class _MetaItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _MetaItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: context.p.muted),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: context.p.muted),
+          ),
+        ],
+      );
+}
+
+/// بطاقة إحصاء حسابات.
+class _UserStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  const _UserStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 218,
+        height: 92,
+        child: AppCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: [
+                    color.withValues(alpha: .28),
+                    color.withValues(alpha: .09),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, size: 23, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 23,
+                      fontWeight: FontWeight.w800,
+                      height: 1.05,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: context.p.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+        ),
+      );
+}
+
+/// بطاقة مستخدم (عرض وإجراءات).
+class _UserCard extends StatelessWidget {
+  final AppStore store;
+  final AppUser user;
+  final String managerName;
+  final VoidCallback onHistory;
+  final VoidCallback? onEdit;
+  final VoidCallback? onToggleActive;
+  final VoidCallback? onClose;
+  const _UserCard({
+    required this.store,
+    required this.user,
+    required this.managerName,
+    required this.onHistory,
+    required this.onEdit,
+    required this.onToggleActive,
+    required this.onClose,
+  });
+
+  Color get _statusColor => switch (user.status) {
+        'closed' => kRed,
+        'disabled' => kGold,
+        _ => const Color(0xFF34C759),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final creationDate = _stampDate(user.createdAt);
+    final creationTime = _stampTime(user.createdAt);
+    final creator = user.createdBy.trim();
+    final division = kDivisionNames[user.division] ??
+        kDivisions[user.division] ??
+        user.division;
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            _UserAvatar(
+              store: store,
+              user: user,
+              radius: 30,
+              statusColor: _statusColor,
+              borderColor: context.p.surface,
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        user.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                      StatusBadge(_userStatusLabel(user.status)),
+                      if (user.passwordChangeRequired)
+                        const StatusBadge('تغيير كلمة المرور مطلوب'),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '@${user.username}',
+                    style: TextStyle(
+                      color: context.p.muted,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _MetaChip(
+                icon: CupertinoIcons.briefcase_fill,
+                label: kRoles[user.role] ?? user.role,
+                color: kPrimary2),
+            if (division.isNotEmpty)
+              _MetaChip(
+                  icon: CupertinoIcons.building_2_fill,
+                  label: division,
+                  color: kPrimary2),
+            _MetaChip(
+                icon: CupertinoIcons.person_2_fill,
+                label: 'المسؤول: $managerName',
+                color: kGold),
+          ]),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 14,
+            runSpacing: 6,
+            children: [
+              _MetaItem(
+                  icon: CupertinoIcons.phone_fill,
+                  text: user.phone.isEmpty ? '—' : user.phone),
+              _MetaItem(
+                  icon: CupertinoIcons.calendar,
+                  text: 'أُنشئ: $creationDate'),
+              _MetaItem(
+                  icon: CupertinoIcons.clock,
+                  text: 'الوقت: $creationTime'),
+              _MetaItem(
+                  icon: CupertinoIcons.person_badge_plus,
+                  text: 'من: ${creator.isEmpty ? 'غير محدد' : creator}'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: context.p.border),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                tooltip: 'صفحة المستخدم',
+                onPressed: () => context.go('/users/${user.id}/profile'),
+                icon: const Icon(CupertinoIcons.person_crop_circle_fill,
+                    size: 22, color: kPrimary2),
+              ),
+              IconButton(
+                tooltip: 'تفاصيل وسجل الحساب',
+                onPressed: onHistory,
+                icon: const Icon(CupertinoIcons.info,
+                    size: 22, color: kGold),
+              ),
+              if (onEdit != null)
+                IconButton(
+                  tooltip: 'تعديل المستخدم',
+                  onPressed: onEdit,
+                  icon: const Icon(CupertinoIcons.pencil,
+                      size: 19, color: kPrimary2),
+                ),
+              if (onToggleActive != null)
+                IconButton(
+                  tooltip: user.active ? 'تعطيل مؤقتًا' : 'إعادة تفعيل',
+                  onPressed: onToggleActive,
+                  icon: Icon(
+                    user.active
+                        ? CupertinoIcons.pause_circle_fill
+                        : CupertinoIcons.checkmark_seal_fill,
+                    size: 20,
+                    color: user.active ? kGold : const Color(0xFF34C759),
+                  ),
+                ),
+              if (onClose != null)
+                IconButton(
+                  tooltip: 'إغلاق الحساب نهائيًا',
+                  onPressed: onClose,
+                  icon: const Icon(CupertinoIcons.lock_fill,
+                      size: 19, color: kRed),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// قسم داخل حوار سجل الحساب.
+class _HistorySection extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color accent;
+  final List<Widget> rows;
+  const _HistorySection({
+    required this.icon,
+    required this.title,
+    required this.accent,
+    required this.rows,
+  });
+
+  @override
+  Widget build(BuildContext context) => AppCard(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      accent.withValues(alpha: .26),
+                      accent.withValues(alpha: .08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: accent),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            for (final row in rows) ...[
+              row,
+              if (row != rows.last) const Divider(height: 14),
+            ],
+          ],
+        ),
+      );
+}
+
+/// صف معلومة في سجل الحساب.
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData? icon;
+  final Color? accent;
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.icon,
+    this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: accent ?? context.p.muted),
+            const SizedBox(width: 8),
+          ] else
+            const SizedBox(width: 2),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: context.p.muted, fontSize: 12.5),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: accent ?? context.p.text,
+              ),
+            ),
+          ),
+        ],
+      );
+}
+
+/// صف فترة تعطيل/تفعيل في السجل.
+class _StatusPeriodRow extends StatelessWidget {
+  final int index;
+  final AccountStatusPeriod period;
+  const _StatusPeriodRow({
+    required this.index,
+    required this.period,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ongoing = period.endedAt.isEmpty;
+    final color = ongoing ? kRed : const Color(0xFF34C759);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .18),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 1.2),
+          ),
+          child: Center(
+            child: Text(
+              '$index',
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w800, color: color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'من ${_stamp12(period.startedAt)} إلى ${ongoing ? 'مستمر' : _stamp12(period.endedAt)}',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'بدأها: ${period.startedBy}'
+                '${period.endedBy.isEmpty ? '' : ' · أعاد التفعيل: ${period.endedBy}'}',
+                style: TextStyle(
+                  color: context.p.muted,
+                  fontSize: 11.5,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
