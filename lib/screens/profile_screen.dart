@@ -64,7 +64,7 @@ class ProfileScreen extends StatelessWidget {
     final permissions = st.effectivePermsFor(user);
     final canEditPerms = st.can('users.manage') && user.role != 'sysadmin';
     final canManageUsers = st.can('users.manage');
-    final canShowLifecycle = canManageUsers && !isSelf;
+    final canShowLifecycle = canManageUsers;
     final createdAt = DateTime.tryParse(user.createdAt);
     final createdDate = createdAt == null ? '—' : fmtDate(createdAt);
     final createdTime = createdAt == null ? '—' : fmtTime12(createdAt);

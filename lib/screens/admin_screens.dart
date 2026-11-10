@@ -484,6 +484,7 @@ class ActiveUsersScreen extends StatelessWidget {
 class _UsersScreenState extends State<UsersScreen> {
   String role = '', div = '';
   String status = '';
+  String view = 'cards';
   final query = TextEditingController();
 
   @override
@@ -1110,50 +1111,116 @@ class _UsersScreenState extends State<UsersScreen> {
         ],
       ),
       AppCard(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            rowOf([
-              Drop('الدور', role, {'': 'الكل', ...kRoles},
-                  (v) => setState(() => role = v)),
-              Drop('الشعبة', div, {'': 'الكل', ...kDivisionNames},
-                  (v) => setState(() => div = v)),
-            ]),
-            const SizedBox(height: 10),
-            rowOf([
-              Drop(
-                'الحالة',
-                status,
-                const {
-                  '': 'كل الحالات',
-                  'active': 'فعال',
-                  'disabled': 'معطل مؤقتًا',
-                  'closed': 'مغلق نهائيًا',
-                },
-                (v) => setState(() => status = v),
+            Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [kPrimary2, Color(0xFF17574E)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(CupertinoIcons.search,
+                    size: 19, color: Colors.white),
               ),
-              Expanded(
-                child: TextField(
-                  controller: query,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: 'بحث بالاسم أو اسم المستخدم',
-                    prefixIcon: const Icon(CupertinoIcons.search),
-                    suffixIcon: query.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(CupertinoIcons.xmark_circle_fill,
-                                size: 19),
-                            onPressed: () {
-                              query.clear();
-                              setState(() {});
-                            },
-                          ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'البحث والفلاتر',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
+              Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
+                  (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
             ]),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
+            TextField(
+              controller: query,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: 'ابحث باسم المستخدم أو اسمه الكامل…',
+                prefixIcon: const Icon(CupertinoIcons.search,
+                    size: 20),
+                suffixIcon: query.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(CupertinoIcons.xmark_circle_fill,
+                            size: 19),
+                        onPressed: () {
+                          query.clear();
+                          setState(() {});
+                        },
+                      ),
+                filled: true,
+                fillColor: context.p.surfaceAlt,
+                contentPadding:
+                    const EdgeInsetsDirectional.fromSTEB(16, 17, 16, 17),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: kPrimary2.withValues(alpha: .6),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _IconDropdown(
+                  icon: CupertinoIcons.briefcase_fill,
+                  label: 'الدور',
+                  value: role,
+                  options: {'': 'الكل', ...kRoles},
+                  onChanged: (v) => setState(() => role = v),
+                ),
+                _IconDropdown(
+                  icon: CupertinoIcons.building_2_fill,
+                  label: 'الشعبة',
+                  value: div,
+                  options: {'': 'الكل', ...kDivisionNames},
+                  onChanged: (v) => setState(() => div = v),
+                ),
+                _IconDropdown(
+                  icon: CupertinoIcons.lock_fill,
+                  label: 'الحالة',
+                  value: status,
+                  options: const {
+                    '': 'كل الحالات',
+                    'active': 'فعال',
+                    'disabled': 'معطل مؤقتًا',
+                    'closed': 'مغلق نهائيًا',
+                  },
+                  onChanged: (v) => setState(() => status = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
@@ -1164,7 +1231,61 @@ class _UsersScreenState extends State<UsersScreen> {
           ],
         ),
       ),
-      if (list.isEmpty)
+      if (view == 'table' && list.isNotEmpty)
+        GridTable(
+          heads: const [
+            'المستخدم',
+            'اسم المستخدم',
+            'الدور',
+            'الشعبة',
+            'المسؤول',
+            'تاريخ الإنشاء',
+            'وقت الإنشاء',
+            'الحالة',
+            '',
+          ],
+          flex: const [2, 2, 2, 2, 2, 2, 2, 2, 2],
+          rows: [
+            for (final u in list)
+              [
+                cellText(u.name, bold: true),
+                cellText(u.username),
+                cellText(kRoles[u.role] ?? u.role),
+                cellText(kDivisionNames[u.division] ??
+                    kDivisions[u.division] ??
+                    u.division),
+                cellText(_managerNameOf(u)),
+                cellText(_stampDate(u.createdAt)),
+                cellText(_stampTime(u.createdAt)),
+                StatusBadge(_userStatusLabel(u.status)),
+                Wrap(spacing: 2, children: [
+                  IconButton(
+                    tooltip: 'صفحة المستخدم',
+                    onPressed: () => context.go('/users/${u.id}/profile'),
+                    icon: const Icon(CupertinoIcons.person_crop_circle_fill,
+                        size: 20, color: kPrimary2),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    tooltip: 'تفاصيل وسجل الحساب',
+                    onPressed: () => _showAccountHistory(u),
+                    icon: const Icon(CupertinoIcons.info,
+                        size: 20, color: kGold),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (u.status != 'closed')
+                    IconButton(
+                      tooltip: 'تعديل المستخدم',
+                      onPressed: () => _edit(st, u),
+                      icon: const Icon(CupertinoIcons.pencil,
+                          size: 17, color: kPrimary2),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ]),
+              ],
+          ],
+        )
+      else if (list.isEmpty)
         AppCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 30),
@@ -2832,4 +2953,49 @@ class _StatusPeriodRow extends StatelessWidget {
       ],
     );
   }
+}
+
+/// قائمة منسدلة بأيقونة ولون — مظهر أفخم لحقل الفلاتر.
+class _IconDropdown extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Map<String, String> options;
+  final ValueChanged<String> onChanged;
+  const _IconDropdown({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 300,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, size: 20, color: kPrimary2),
+            filled: true,
+            fillColor: context.p.surfaceAlt,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              icon: const Icon(CupertinoIcons.chevron_down, size: 17),
+              items: [
+                for (final e in options.entries)
+                  DropdownMenuItem(value: e.key, child: Text(e.value)),
+              ],
+              onChanged: (v) => onChanged(v ?? ''),
+            ),
+          ),
+        ),
+      );
 }
