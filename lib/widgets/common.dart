@@ -525,13 +525,28 @@ class InfoTile extends StatelessWidget {
         color: context.p.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: context.p.border.withValues(alpha: .8)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+                alpha: context.p.isDark ? .22 : .06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: .12),
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                color.withValues(alpha: .22),
+                color.withValues(alpha: .09),
+              ],
+            ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, size: 17, color: color),

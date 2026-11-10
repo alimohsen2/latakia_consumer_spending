@@ -1129,40 +1129,42 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 54,
-                    height: 54,
+                    width: 58,
+                    height: 58,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [Color(0xFF2E8C7E), Color(0xFF17574E)],
                       ),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: kPrimary.withValues(alpha: .35)),
                       boxShadow: [
                         BoxShadow(
-                          color: kPrimary.withValues(alpha: .25),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
+                          color: kPrimary.withValues(alpha: .3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: const Icon(CupertinoIcons.doc_text,
-                        color: Colors.white, size: 26),
+                        color: Colors.white, size: 27),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'إنشاء محضر ضبط مخالفة',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
+                          style: const TextStyle(
+                            fontSize: 27,
+                            fontWeight: FontWeight.w800,
+                            height: 1.15,
+                            letterSpacing: -0.4,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           'المرسوم التشريعي 11/2015 · محضر ${r.serial.isEmpty ? 'جديد' : 'رقم ${r.serial}'}',
                           style: TextStyle(

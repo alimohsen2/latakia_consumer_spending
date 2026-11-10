@@ -11,6 +11,7 @@ import 'screens/sales_screens.dart';
 import 'screens/admin_screens.dart';
 import 'screens/archive_screens.dart';
 import 'screens/field_screens.dart';
+import '../field_monitoring/screens/field_monitor_screen.dart';
 import 'screens/misc_screens.dart';
 import 'screens/profile_screen.dart';
 
@@ -131,6 +132,13 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 builder: (c, s) =>
                     ArchiveDetailScreen(id: s.pathParameters['id']!)),
             GoRoute(path: '/field', builder: (c, s) => const FieldHomeScreen()),
+            GoRoute(
+                path: '/field/monitor',
+                builder: (c, s) => const FieldMonitorScreen(
+                      apiBaseUrl: '',
+                      token: '',
+                      inspectorId: '',
+                    )),
             GoRoute(
                 path: '/field/new',
                 builder: (c, s) => const FieldDraftEditorScreen()),
