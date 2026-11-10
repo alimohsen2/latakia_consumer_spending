@@ -39,9 +39,9 @@ class _AppCardState extends State<AppCard> {
         onTap: widget.onTap,
         behavior: interactive ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, lifted ? -3 : 0, 0),
+          transform: Matrix4.translationValues(0, lifted ? -2 : 0, 0),
           transformAlignment: Alignment.center,
           padding: widget.padding,
           decoration: ShapeDecoration(
@@ -50,22 +50,22 @@ class _AppCardState extends State<AppCard> {
               borderRadius: BorderRadius.circular(28),
               side: BorderSide(
                 color: lifted
-                    ? kPrimary2.withValues(alpha: .5)
+                    ? kPrimary2.withValues(alpha: .4)
                     : context.p.border,
-                width: lifted ? 1.2 : .5,
+                width: lifted ? 1.1 : .5,
               ),
             ),
             shadows: [
               BoxShadow(
                 color: lifted
                     ? (context.p.isDark
-                        ? const Color(0x4D000000)
-                        : kPrimary2.withValues(alpha: .18))
+                        ? const Color(0x3F000000)
+                        : kPrimary2.withValues(alpha: .12))
                     : (context.p.isDark
                         ? const Color(0x33000000)
                         : const Color(0x0F000000)),
-                blurRadius: lifted ? 24 : 10,
-                offset: lifted ? const Offset(0, 12) : const Offset(0, 2),
+                blurRadius: lifted ? 18 : 10,
+                offset: lifted ? const Offset(0, 8) : const Offset(0, 2),
               )
             ],
           ),
@@ -379,6 +379,9 @@ class _HoverRowState extends State<_HoverRow> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onTap != null;
+    final active = enabled && _hover;
+    const ease = Curves.easeOutCubic;
+    const duration = Duration(milliseconds: 240);
     return MouseRegion(
       onEnter: enabled ? (_) => setState(() => _hover = true) : null,
       onExit: enabled ? (_) => setState(() => _hover = false) : null,
@@ -386,25 +389,39 @@ class _HoverRowState extends State<_HoverRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
-          
-          decoration: BoxDecoration(
-            color: enabled && _hover
-                ? context.p.surfaceAlt
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: enabled && _hover
-                  ? kPrimary2.withValues(alpha: .35)
-                  : Colors.transparent,
+        child: Stack(
+          children: [
+            // خلفية ناعمة تتدرج دون حدود تومض
+            AnimatedContainer(
+              duration: duration,
+              curve: ease,
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
+              decoration: BoxDecoration(
+                color: active
+                    ? context.p.surfaceAlt
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: widget.child,
             ),
-          ),
-          child: widget.child,
+            // شريط مميز رفيع ينزلق من الحافة عند التحويم
+            PositionedDirectional(
+              start: 8,
+              top: 10,
+              bottom: 10,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: AnimatedContainer(
+                  width: active ? 3.5 : 0,
+                  duration: duration,
+                  curve: ease,
+                  color: kPrimary2,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

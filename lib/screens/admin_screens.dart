@@ -1076,7 +1076,11 @@ class _UsersScreenState extends State<UsersScreen> {
                 cellText(_stampDate(list[index].createdAt)),
                 cellText(_stampTime(list[index].createdAt)),
                 StatusBadge(_userStatusLabel(list[index].status)),
-                Wrap(spacing: 8, children: [
+                Wrap(
+                  spacing: 14,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
                   _CircleIconButton(
                     tooltip: 'صفحة المستخدم',
                     onPressed: () =>
@@ -1100,7 +1104,8 @@ class _UsersScreenState extends State<UsersScreen> {
                       color: kPrimary2,
                       size: 40,
                     ),
-                ]),
+                  ],
+                ),
               ],
           ],
         )
