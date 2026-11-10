@@ -61,7 +61,8 @@ class ProfileScreen extends StatelessWidget {
         .where((report) => report.status != 'ملغى')
         .fold<num>(0, (sum, report) => sum + report.total);
     final manager = _findUser(st, user.managerId);
-    final permissions = _permissionsFor(st, user);
+    final permissions = st.effectivePermsFor(user);
+    final canEditPerms = st.can('users.manage') && user.role != 'sysadmin';
     final canManageUsers = st.can('users.manage');
     final createdStamp = _stamp(user.createdAt);
 
@@ -199,87 +200,23 @@ class ProfileScreen extends StatelessWidget {
           children: [
             _CollapsibleSection(
               title: 'الصلاحيات',
-              subtitle: user.role == 'sysadmin'
-                  ? 'مدير النظام يملك كل الصلاحيات'
-                  : 'الصلاحيات المسندة لهذا الحساب',
+              subtitle: st.hasPermOverride(user.id)
+                  ? 'صلاحيات مخصصة لهذا الحساب'
+                  : user.role == 'sysadmin'
+                      ? 'مدير النظام يملك كل الصلاحيات'
+                      : 'الصلاحيات المسندة لهذا الحساب',
               icon: CupertinoIcons.lock_shield_fill,
               accent: kGold,
               trailing: '${permissions.length}',
               defaultOpen: true,
               children: [
                 const SizedBox(height: 4),
-                if (user.role == 'sysadmin')
-                  Container(
-                    padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-                    decoration: BoxDecoration(
-                      color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: kGold.withValues(alpha: .35)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(CupertinoIcons.sparkles,
-                            size: 17, color: kGold),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'صلاحيات كاملة على النظام بوصفه مدير النظام',
-                            style: TextStyle(
-                              color: context.p.isDark
-                                  ? const Color(0xFFE9CEA8)
-                                  : const Color(0xFF6B4A0C),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else if (permissions.isEmpty)
-                  Text(
-                    'لا توجد صلاحيات مسندة لهذا الحساب.',
-                    style: TextStyle(color: context.p.muted, fontSize: 13),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final permission in permissions)
-                        Container(
-                          padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 12, 6),
-                          decoration: BoxDecoration(
-                            color: context.p.isDark
-                                ? Colors.white.withValues(alpha: .06)
-                                : const Color(0xFFF4F6F5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.p.isDark
-                                  ? const Color(0xFF29302F)
-                                  : const Color(0xFFE0E7E5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(CupertinoIcons.checkmark_circle_fill,
-                                  size: 14, color: kPrimary2),
-                              const SizedBox(width: 6),
-                              Text(
-                                kPerms[permission] ?? permission,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
+                _PermissionsPanel(
+                  st: st,
+                  user: user,
+                  permissions: permissions,
+                  canEdit: canEditPerms,
+                ),
               ],
             ),
           ],
@@ -326,10 +263,6 @@ class ProfileScreen extends StatelessWidget {
         (value == user.name.trim() || value == user.username.trim());
   }
 
-  static List<String> _permissionsFor(AppStore store, AppUser user) {
-    if (user.role == 'sysadmin') return kPerms.keys.toList();
-    return store.perms[user.role] ?? const [];
-  }
 
   static String _statusLabel(String value) => switch (value) {
         'closed' => 'مغلق نهائيًا',
@@ -1217,6 +1150,241 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// لوحة الصلاحيات: عرض عمودي مع إمكانية التعديل للمديرين.
+class _PermissionsPanel extends StatelessWidget {
+  final AppStore st;
+  final AppUser user;
+  final List<String> permissions;
+  final bool canEdit;
+  const _PermissionsPanel({
+    required this.st,
+    required this.user,
+    required this.permissions,
+    required this.canEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (user.role == 'sysadmin') {
+      return Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kGold.withValues(alpha: .35)),
+        ),
+        child: Row(
+          children: [
+            const Icon(CupertinoIcons.sparkles, size: 17, color: kGold),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'صلاحيات كاملة على النظام بوصفه مدير النظام',
+                style: TextStyle(
+                  color: context.p.isDark
+                      ? const Color(0xFFE9CEA8)
+                      : const Color(0xFF6B4A0C),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (canEdit)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                if (st.hasPermOverride(user.id))
+                  TextButton.icon(
+                    onPressed: () async {
+                      final ok = await confirmDialog(
+                        context,
+                        'استعادة صلاحيات الدور',
+                        'ستعود صلاحيات حساب «${user.name}» إلى صلاحيات دوره. متابعة؟',
+                      );
+                      if (ok) st.resetUserPerms(user.id);
+                    },
+                    icon: const Icon(CupertinoIcons.arrow_counterclockwise,
+                        size: 15),
+                    label: const Text(
+                      'استعادة صلاحيات الدور',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () => _showAddDialog(context),
+                  icon: const Icon(CupertinoIcons.plus_circle, size: 16),
+                  label: const Text(
+                    'إضافة صلاحية',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (permissions.isEmpty)
+          Text(
+            'لا توجد صلاحيات مسندة لهذا الحساب.',
+            style: TextStyle(color: context.p.muted, fontSize: 13),
+          )
+        else
+          for (final permission in permissions)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _PermissionRow(
+                permission: permission,
+                onRemove: canEdit
+                    ? () => _removePermission(context, permission)
+                    : null,
+              ),
+            ),
+      ],
+    );
+  }
+
+  Future<void> _showAddDialog(BuildContext context) async {
+    final granted = {...permissions};
+    final available = [
+      for (final e in kPerms.entries)
+        if (!granted.contains(e.key)) e,
+    ];
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.p.surface,
+        shape: ContinuousRectangleBorder(
+            borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'إضافة صلاحية',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: SizedBox(
+          width: 380,
+          child: available.isEmpty
+              ? const Text('كل الصلاحيات مسندة لهذا الحساب بالفعل.')
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'اختر الصلاحية التي تريد إسنادها إلى ${user.name}',
+                      style: TextStyle(color: ctx.p.muted, fontSize: 12),
+                    ),
+                    const SizedBox(height: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 360),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: available.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, i) {
+                          final e = available[i];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(CupertinoIcons.plus_circle_fill,
+                                size: 20, color: kPrimary2),
+                            title: Text(
+                              e.value,
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              e.key,
+                              style: TextStyle(
+                                  fontSize: 10.5, color: ctx.p.muted),
+                            ),
+                            onTap: () => Navigator.pop(ctx, e.key),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+    if (picked != null) st.addUserPerm(user.id, picked);
+  }
+
+  Future<void> _removePermission(BuildContext context, String perm) async {
+    final label = kPerms[perm] ?? perm;
+    final ok = await confirmDialog(
+      context,
+      'حذف صلاحية',
+      'هل أنت متأكد من حذف صلاحية «$label» من حساب «${user.name}»؟',
+    );
+    if (ok) st.removeUserPerm(user.id, perm);
+  }
+}
+
+/// صف صلاحية واحد بشكل عمودي مع أيقونة حذف اختيارية.
+class _PermissionRow extends StatelessWidget {
+  final String permission;
+  final VoidCallback? onRemove;
+  const _PermissionRow({
+    required this.permission,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = context.p.isDark;
+    final label = kPerms[permission] ?? permission;
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 9, 10, 9),
+      decoration: BoxDecoration(
+        color: dark
+            ? Colors.white.withValues(alpha: .05)
+            : const Color(0xFFF7FAF8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: dark ? const Color(0xFF29302F) : const Color(0xFFE0E7E5),
+        ),
+      ),
+      child: Row(children: [
+        const Icon(CupertinoIcons.checkmark_circle_fill,
+            size: 17, color: kPrimary2),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+        ),
+        if (onRemove != null)
+          IconButton(
+            tooltip: 'حذف الصلاحية',
+            onPressed: onRemove,
+            icon: const Icon(CupertinoIcons.minus_circle,
+                size: 21, color: kRed),
+            visualDensity: VisualDensity.compact,
+          ),
+      ]),
     );
   }
 }
