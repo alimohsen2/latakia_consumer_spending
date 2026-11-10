@@ -304,6 +304,9 @@ class GridTable extends StatelessWidget {
   /// عند تمريرها تصبح الصفوف تفاعلية: تظليل عند التحويم والنقر هنا ينفذ
   /// [onRowTap] مع رقم الصف.
   final void Function(int index)? onRowTap;
+
+  /// أرقام الأعمدة التي تُوسَّط عناوينها وخلاياها.
+  final Set<int> centerColumns;
   const GridTable(
       {super.key,
       required this.heads,
@@ -311,6 +314,7 @@ class GridTable extends StatelessWidget {
       this.flex,
       this.minWidth,
       this.onRowTap,
+      this.centerColumns = const {},
       this.empty = 'لا توجد بيانات'});
   @override
   Widget build(BuildContext context) {
@@ -323,6 +327,9 @@ class GridTable extends StatelessWidget {
             Expanded(
                 flex: f[i],
                 child: Text(heads[i],
+                    textAlign: centerColumns.contains(i)
+                        ? TextAlign.center
+                        : TextAlign.start,
                     style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -344,7 +351,9 @@ class GridTable extends StatelessWidget {
                 Expanded(
                     flex: f[i],
                     child: Align(
-                        alignment: AlignmentDirectional.centerStart,
+                        alignment: centerColumns.contains(i)
+                            ? AlignmentDirectional.center
+                            : AlignmentDirectional.centerStart,
                         child: rows[n][i]))
             ]),
           ),

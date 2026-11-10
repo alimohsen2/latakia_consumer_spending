@@ -1048,18 +1048,19 @@ class _UsersScreenState extends State<UsersScreen> {
       if (view == 'table' && list.isNotEmpty)
         GridTable(
           onRowTap: (index) => context.go('/users/${list[index].id}/profile'),
+          centerColumns: const {0, 1, 9, 10},
           heads: const [
             '#',
             'الأيقونة',
-            'اسم المستخدم',
             'الدور',
+            'اسم المستخدم',
             'الشعبة',
             'المسؤول',
-            'رقم الموبايل',
+            'الموبايل',
             'تاريخ الإنشاء',
             'وقت الإنشاء',
             'الحالة',
-            '',
+            'إجراءات',
           ],
           flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
           rows: [
@@ -1070,8 +1071,8 @@ class _UsersScreenState extends State<UsersScreen> {
                   message: kRoles[list[index].role] ?? list[index].role,
                   child: _RoleIcon(role: list[index].role),
                 ),
-                cellText(list[index].username),
                 cellText(kRoles[list[index].role] ?? list[index].role),
+                cellText(list[index].username),
                 cellText(kDivisionNames[list[index].division] ??
                     kDivisions[list[index].division] ??
                     list[index].division),
