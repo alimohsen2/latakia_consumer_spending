@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/util.dart';
 import 'attachments.dart';
-import 'field_sync.dart';
 import 'models.dart';
 import 'sales_api.dart';
 
@@ -32,14 +31,13 @@ class VerifyResult {
 /// مخزن البيانات المحلي. تُسلسل الكتابات لضمان حفظ أحدث نسخة بالترتيب.
 class AppStore extends ChangeNotifier {
   static const _key = 'lcs_db_v1';
-  static const _fieldKey = 'lcs_field_v1';
   static const _sessionKey = 'lcs_session_user_v1';
   // مفتاح توقيع تجريبي. في الإنتاج يبقى على الخادم فقط ولا يوضع في التطبيق.
   static const _secret = 'LTX-DEMO-SECRET-MOVE-TO-SERVER';
 
   final SalesApi salesApi = MockSalesApi();
 
-  /// مرفقات المحاضر والمسودات الميدانية. الملفات منفصلة عن ملف البيانات.
+  /// مرفقات المحاضر. الملفات منفصلة عن ملف البيانات.
   final AttachmentStore attachmentStore = AttachmentStore();
   SharedPreferences? _p;
   Future<void> _pendingWrites = Future<void>.value();
@@ -54,8 +52,6 @@ class AppStore extends ChangeNotifier {
   List<SerialBook> books = [];
   List<Map<String, dynamic>> savedFilters = [];
   List<Map<String, dynamic>> alertLog = [];
-  List<FieldDraft> fieldDrafts = [];
-  bool fieldSyncBusy = false;
   Map<String, List<String>> perms = defaultPerms();
   Map<String, List<String>> routing = defaultRouting();
   Map<String, dynamic> settings = {};
@@ -72,7 +68,6 @@ class AppStore extends ChangeNotifier {
         'declineHigh': 25,
         'declineMedium': 15,
         'statementsDeadlineDay': 10,
-        'fieldSyncUrl': '',
         'archiveLocationRequired': false,
         'darkMode': false,
         'violationTypes': [
@@ -107,7 +102,6 @@ class AppStore extends ChangeNotifier {
       }
     }
     await _restoreSession();
-    _loadFieldDrafts();
     await _pendingWrites;
     await loadSales();
   }
@@ -122,34 +116,6 @@ class AppStore extends ChangeNotifier {
       }
     }
     _queueRemove(_sessionKey);
-  }
-
-  /// المسودات الميدانية تُحفظ في مساحة مستقلة حتى تبقى سليمة عند العمل بلا
-  /// اتصال، ولألا يمسّها استيراد نسخة احتياطية قديمة.
-  void _loadFieldDrafts() {
-    final raw = _p?.getString(_fieldKey);
-    if (raw == null) {
-      fieldDrafts = [];
-      return;
-    }
-    try {
-      fieldDrafts = ((jsonDecode(raw) as List?) ?? [])
-          .map((e) => FieldDraft.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (error, stackTrace) {
-      Error.throwWithStackTrace(
-        StateError('تعذر قراءة المسودات الميدانية المحلية: $error'),
-        stackTrace,
-      );
-    }
-  }
-
-  void _saveField() {
-    _queueWrite(
-      _fieldKey,
-      jsonEncode(fieldDrafts.map((e) => e.toJson()).toList()),
-    );
-    notifyListeners();
   }
 
   // ---------- حفظ وتحميل ----------
@@ -644,11 +610,8 @@ class AppStore extends ChangeNotifier {
   /// إدارة صور أضبارة المكلف: لمن يعدّل المكلفين أو لشعبة الأرشيف.
   bool canTaxpayerFiles() => can('taxpayers.edit') || inArchiveDivision;
 
-  int get pendingFieldDrafts =>
-      fieldDrafts.where((d) => d.ready || d.failed).length;
   int get attachmentCount =>
       reports.fold<int>(0, (a, r) => a + r.attachments.length) +
-      fieldDrafts.fold<int>(0, (a, d) => a + d.attachments.length) +
       taxpayers.fold<int>(0, (a, t) => a + t.attachments.length);
 
   // ---------- المكلفون ----------
@@ -953,19 +916,16 @@ class AppStore extends ChangeNotifier {
 
   Future<void> removeReportAttachment(Report r, Attachment a) async {
     r.attachments.removeWhere((x) => x.id == a.id);
-    // بعد المزامنة قد يشترك المحضر والمسودة الميدانية في نفس ملف البايتات.
+    // قد يشترك ملف المرفق بين محضر واحد فقط؛ يُحذف عند عدم استخدامه.
     if (!attachmentReferenced(a.id)) await attachmentStore.delete(a.id);
     _log('حذف مرفق', r.serial.isEmpty ? r.id : r.serial, a.name);
     _save();
   }
 
-  /// هل ما زال المرفق مستخدماً في أي محضر أو مسودة ميدانية أو أضبارة مكلف؟
+  /// هل ما زال المرفق مستخدماً في أي محضر أو مكلف؟
   bool attachmentReferenced(String id) {
     for (final r in reports) {
       if (r.attachments.any((a) => a.id == id)) return true;
-    }
-    for (final d in fieldDrafts) {
-      if (d.attachments.any((a) => a.id == id)) return true;
     }
     for (final t in taxpayers) {
       if (t.attachments.any((a) => a.id == id)) return true;
@@ -1006,200 +966,6 @@ class AppStore extends ChangeNotifier {
     r.archivedBy = '';
     _log('إلغاء موقع أرشيف', r.serial.isEmpty ? r.id : r.serial, '');
     _save();
-  }
-
-  // ---------- العمل الميداني ----------
-  FieldDraft? fieldDraft(String id) {
-    for (final d in fieldDrafts) {
-      if (d.id == id) return d;
-    }
-    return null;
-  }
-
-  void saveFieldDraft(FieldDraft d) {
-    final i = fieldDrafts.indexWhere((x) => x.id == d.id);
-    final now = DateTime.now().toIso8601String();
-    if (d.createdAt.isEmpty) d.createdAt = now;
-    d.updatedAt = now;
-    if (i < 0) {
-      fieldDrafts.insert(0, d);
-    } else {
-      fieldDrafts[i] = d;
-    }
-    _log(i < 0 ? 'إنشاء مسودة ميدانية' : 'تعديل مسودة ميدانية',
-        d.taxpayerName.isEmpty ? d.id : d.taxpayerName, d.status);
-    _save();
-    _saveField();
-  }
-
-  Future<void> deleteFieldDraft(FieldDraft d) async {
-    fieldDrafts.removeWhere((x) => x.id == d.id);
-    for (final a in d.attachments) {
-      // إن كان المحضر المُزامَن ما زال يستخدم الملف فلا تحذفه.
-      if (!attachmentReferenced(a.id)) await attachmentStore.delete(a.id);
-    }
-    _log('حذف مسودة ميدانية', d.taxpayerName.isEmpty ? d.id : d.taxpayerName,
-        '');
-    _save();
-    _saveField();
-  }
-
-  /// مزامنة مسودة واحدة. إن لم يُضبط عنوان خادم المزامنة تعمل المزامنة محلياً
-  /// (وضع العرض) فتُنشئ المحضر في النظام نفسه كمسودة جاهزة للاعتماد.
-  Future<SyncOutcome> syncFieldDraft(FieldDraft d) async {
-    if (d.synced) {
-      return SyncOutcome.ok('تمت مزامنة هذه المسودة سابقاً',
-          reportId: d.serverReportId, serial: d.serial);
-    }
-    if (fieldSyncBusy) return const SyncOutcome.fail('عملية مزامنة أخرى جارية');
-    fieldSyncBusy = true;
-    notifyListeners();
-    SyncOutcome out;
-    try {
-      final url = ((settings['fieldSyncUrl'] as String?) ?? '').trim();
-      if (url.isEmpty) {
-        out = _syncFieldLocal(d);
-      } else {
-        final files = <FieldSyncFile>[];
-        for (final a in d.attachments) {
-          final b = await attachmentStore.get(a.id);
-          if (b != null) {
-            files.add(FieldSyncFile(name: a.name, mime: a.mime, bytes: b));
-          }
-        }
-        out = await HttpFieldSyncTransport(url).push(d, files: files);
-        if (out.ok) {
-          d.status = 'مزامَن';
-          d.serverReportId = out.reportId ?? '';
-          if (out.serial != null && out.serial!.isNotEmpty) {
-            d.serial = out.serial!;
-          }
-          d.syncedAt = DateTime.now().toIso8601String();
-          d.lastError = '';
-          _log('مزامنة ميدانية', d.serial.isEmpty ? d.id : d.serial,
-              'إلى الخادم');
-          _save();
-          _saveField();
-        } else {
-          d.status = 'فشل';
-          d.lastError = out.message;
-          _saveField();
-        }
-      }
-      d.attempts = d.attempts + 1;
-      _saveField();
-    } catch (e) {
-      d.status = 'فشل';
-      d.lastError = 'خطأ غير متوقع: $e';
-      d.attempts = d.attempts + 1;
-      _saveField();
-      out = SyncOutcome.fail(d.lastError);
-    } finally {
-      fieldSyncBusy = false;
-      notifyListeners();
-    }
-    return out;
-  }
-
-  SyncOutcome _syncFieldLocal(FieldDraft d) {
-    final rid = newId();
-    // ابحث عن المكلف بالرقم الضريبي، أو بالاسم إن لم يوجد رقم، وإلا أنشئه.
-    Taxpayer? match;
-    final wantNo = d.taxNo.trim();
-    final wantName = normAr(d.taxpayerName);
-    for (final t in taxpayers) {
-      if (d.taxpayerId.isNotEmpty && t.id == d.taxpayerId) {
-        match = t;
-        break;
-      }
-      if (wantNo.isNotEmpty && t.taxNo == wantNo) {
-        match = t;
-        break;
-      }
-      if (wantNo.isEmpty && wantName.isNotEmpty && normAr(t.name) == wantName) {
-        match = t;
-        break;
-      }
-    }
-    if (match == null && d.taxpayerName.trim().isNotEmpty) {
-      match = Taxpayer(
-        id: newId(),
-        name: d.taxpayerName.trim(),
-        category: 'أخرى',
-        taxNo:
-            wantNo.isEmpty ? 'ميداني-${rid.substring(rid.length - 6)}' : wantNo,
-        address: d.address.trim(),
-        profession: d.profession.trim(),
-        status: 'فعال',
-      );
-      taxpayers.add(match);
-      _log('إضافة مكلف من الميدان', match.name, match.taxNo);
-    }
-    if (match == null) {
-      return const SyncOutcome.fail(
-          'لم يُحدَّد المكلف. اكتب اسم المنشأة أو الرقم الضريبي ثم أعد المزامنة.');
-    }
-
-    var serial = d.serial.trim();
-    if (serial.isEmpty || reports.any((r) => r.serial == serial)) {
-      serial = nextSerial();
-    }
-    if (settings['serialMode'] == 'manual' && books.isNotEmpty) {
-      final n = int.tryParse(serial);
-      if (n == null || !books.any((b) => !b.closed && b.contains(n))) {
-        serial = nextSerial();
-      }
-    }
-
-    final r = Report(
-      id: rid,
-      serial: serial,
-      taxpayerId: match.id,
-      date: DateTime.tryParse(d.createdAt) ?? DateTime.now(),
-      orderNo: d.orderNo.trim(),
-      orderDate: d.orderDate.trim(),
-      createdBy: d.inspectorName.isEmpty
-          ? (me?.name ?? 'مفتش ميداني')
-          : d.inspectorName,
-      division: 'field',
-      items: [
-        for (final i in d.items)
-          Violation(type: i.type, article: i.article, fine: i.fine)
-      ],
-      lateFeePct: (settings['lateFeePct'] as num?) ?? 0,
-      servedName: d.servedName.trim(),
-      servedCapacity: d.servedCapacity.trim(),
-      servedNationalNo: d.servedNationalNo.trim(),
-      inspectors:
-          d.inspectors.trim().isEmpty ? d.inspectorName : d.inspectors.trim(),
-      fieldHead: d.fieldHead.trim(),
-      attachments: [for (final a in d.attachments) a.copyWith(ownerId: rid)],
-    );
-    reports.insert(0, r);
-    d.status = 'مزامَن';
-    d.serverReportId = rid;
-    d.serial = serial;
-    d.syncedAt = DateTime.now().toIso8601String();
-    d.lastError = '';
-    _log('استلام محضر ميداني', serial,
-        '${d.taxpayerName} · ${d.items.length} مخالفة · ${d.attachments.length} مرفق');
-    _save();
-    _saveField();
-    return SyncOutcome.ok(
-      'تم إنشاء المحضر $serial كمسودة جاهزة للاعتماد${d.attachments.isEmpty ? '' : ' مع ${d.attachments.length} مرفق'}',
-      reportId: rid,
-      serial: serial,
-    );
-  }
-
-  /// يعيد عدد المسودات التي نجحت مزامنتها.
-  Future<int> syncAllField() async {
-    var ok = 0;
-    for (final d in fieldDrafts.where((x) => x.ready || x.failed).toList()) {
-      final r = await syncFieldDraft(d);
-      if (r.ok) ok++;
-    }
-    return ok;
   }
 
   // ---------- QR والتحقق ----------
@@ -1899,8 +1665,6 @@ class AppStore extends ChangeNotifier {
 
   void resetDemo() {
     sales = {};
-    fieldDrafts = [];
-    _queueRemove(_fieldKey);
     attachmentStore.clearAll();
     _seed();
     loadSales();

@@ -30,7 +30,7 @@ const _items = [
       'المحاضر', Color(0xFFF7C873)),
   _Nav('/approvals', 'اعتماد المحاضر', CupertinoIcons.checkmark_seal,
       'reports.approve|reports.endorse', 'المحاضر', Color(0xFFA8E6A1)),
-  _Nav('/field', 'المفتش الميداني', CupertinoIcons.location, 'field.view',
+  _Nav('/field/monitor', 'المفتش الميداني', CupertinoIcons.location, 'field.view',
       'الميدان', Color(0xFFFFB3C1)),
   _Nav('/archive', 'أرشيف المحاضر', CupertinoIcons.archivebox, 'archive.view',
       'الأرشيف', Color(0xFFC7B6FF)),
@@ -376,7 +376,7 @@ class _SidebarState extends State<Sidebar> {
     final groups = <String, List<_Nav>>{};
     for (final item in _items) {
       if (item.perm != null && !st.can(item.perm!)) continue;
-      if (item.path == '/field' && !st.canField()) continue;
+      if (item.path == '/field/monitor' && !st.canField()) continue;
       groups.putIfAbsent(item.group, () => []).add(item);
     }
     final allGroupsCollapsed =

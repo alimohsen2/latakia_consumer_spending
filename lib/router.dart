@@ -10,7 +10,6 @@ import 'screens/registers_screens.dart';
 import 'screens/sales_screens.dart';
 import 'screens/admin_screens.dart';
 import 'screens/archive_screens.dart';
-import 'screens/field_screens.dart';
 import '../field_monitoring/screens/field_monitor_screen.dart';
 import 'screens/misc_screens.dart';
 import 'screens/profile_screen.dart';
@@ -29,7 +28,7 @@ const _guards = [
   ['/declines', 'analytics.view'],
   ['/alerts', 'alerts.view'],
   ['/archive', 'archive.view'],
-  ['/field', 'field.view'],
+  ['/field/monitor', 'field.view'],
   ['/users', 'users.manage'],
   ['/active-users', 'users.manage'],
   ['/permissions', 'permissions.manage'],
@@ -53,7 +52,6 @@ GoRouter buildRouter(AppStore store) => GoRouter(
         if (p == '/login') return '/';
         for (final g in _guards) {
           if (p == g[0] || p.startsWith('${g[0]}/')) {
-            if (g[0] == '/field' && !store.canField()) return '/';
             return store.can(g[1]) ? null : '/';
           }
         }
@@ -131,7 +129,6 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 path: '/archive/:id',
                 builder: (c, s) =>
                     ArchiveDetailScreen(id: s.pathParameters['id']!)),
-            GoRoute(path: '/field', builder: (c, s) => const FieldHomeScreen()),
             GoRoute(
                 path: '/field/monitor',
                 builder: (c, s) => const FieldMonitorScreen(
@@ -139,13 +136,6 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                       token: '',
                       inspectorId: '',
                     )),
-            GoRoute(
-                path: '/field/new',
-                builder: (c, s) => const FieldDraftEditorScreen()),
-            GoRoute(
-                path: '/field/:id',
-                builder: (c, s) =>
-                    FieldDraftEditorScreen(id: s.pathParameters['id']!)),
             GoRoute(
                 path: '/users/:id/profile',
                 builder: (c, s) =>

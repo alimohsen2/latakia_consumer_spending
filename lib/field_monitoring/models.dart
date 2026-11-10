@@ -63,3 +63,17 @@ class FieldLocation {
         'timestamp': timestamp.toIso8601String(),
       };
 }
+
+/// نتيجة إرسال موقع التتبع إلى الخادم.
+class FieldLocationSendResult {
+  final bool ok;
+  final String message;
+  final String? reportId;
+  final String? serial;
+
+  FieldLocationSendResult.ok(this.message, {this.reportId, this.serial})
+      : ok = true;
+
+  FieldLocationSendResult.fail(this.message, {this.reportId, this.serial})
+      : ok = false;
+}

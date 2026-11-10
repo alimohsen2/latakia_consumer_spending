@@ -312,38 +312,6 @@ Future<int> addPickedFilesToReport(BuildContext context, AppStore st, Report r,
   return n;
 }
 
-/// يضيف ملفات إلى مسودة ميدانية (دون حفظ المسودة؛ على المستدعي الحفظ).
-Future<int> addPickedFilesToDraft(
-    BuildContext context, AppStore st, String ownerId, List<Attachment> target,
-    {bool imagesOnly = false}) async {
-  final picked = await pickAttachments(imagesOnly: imagesOnly);
-  var n = 0;
-  String? err;
-  for (final p in picked) {
-    err = st.attachmentError(p.bytes);
-    if (err != null) continue;
-    final a = await st.createAttachment(
-      ownerId: ownerId,
-      name: p.name,
-      mime: p.mime,
-      bytes: p.bytes,
-      kind: p.mime.startsWith('image/') ? 'photo' : 'document',
-    );
-    if (a != null) {
-      target.add(a);
-      n++;
-    }
-  }
-  if (context.mounted) {
-    if (err != null) {
-      toast(context, err);
-    } else if (n > 0) {
-      toast(context, 'أُضيف $n مرفق');
-    }
-  }
-  return n;
-}
-
 /// يضيف صوراً إلى أضبارة مكلف (مع رسائل الخطأ). يعيد عدد المضاف.
 Future<int> addPickedFilesToTaxpayer(
     BuildContext context, AppStore st, Taxpayer t,
