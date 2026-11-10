@@ -69,6 +69,12 @@ class _FieldHomeScreenState extends State<FieldHomeScreen> {
                 label:
                     Text(st.fieldSyncBusy ? 'جارٍ المزامنة…' : 'مزامنة الكل'),
               ),
+            if (st.can('field.create'))
+              FilledButton.icon(
+                onPressed: () => context.go('/field/monitor'),
+                icon: const Icon(CupertinoIcons.location),
+                label: const Text('تتبع ميداني'),
+              ),
           ]),
       Container(
         padding: const EdgeInsets.all(14),
