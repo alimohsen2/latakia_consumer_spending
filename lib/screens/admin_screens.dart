@@ -1942,10 +1942,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ctl = <String, TextEditingController>{};
   TextEditingController c(AppStore st, String k) => ctl.putIfAbsent(
       k, () => TextEditingController(text: '${st.settings[k]}'));
-  TextEditingController cUrl(AppStore st) => ctl.putIfAbsent(
-      'fieldSyncUrl',
-      () =>
-          TextEditingController(text: '${st.settings['fieldSyncUrl'] ?? ''}'));
 
   @override
   Widget build(BuildContext context) {
@@ -1967,8 +1963,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final v = num.tryParse(ctl[k]?.text ?? '');
               if (v != null) st.setSetting(k, v);
             }
-            final u = ctl['fieldSyncUrl'];
-            if (u != null) st.setSetting('fieldSyncUrl', u.text.trim());
             toast(context, 'حُفظت الإعدادات');
           },
           child: const Text('حفظ'),
@@ -2062,29 +2056,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: const Icon(CupertinoIcons.trash),
                     onPressed: () =>
                         st.setViolationTypes([...types]..removeAt(i)))),
-        ]),
-      ),
-      AppCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('المزامنة الميدانية',
-              style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(
-              'اترك العنوان فارغاً للعمل بالوضع المحلي (تُنشأ المحاضر داخل النظام). عند ربط الخادم اكتب جذر العنوان مثل https://api.example.gov.sy فتُرسل المسودات إلى /field/sync.',
-              style: TextStyle(color: context.p.muted, fontSize: 12)),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 520,
-            child: TextField(
-                controller: cUrl(st),
-                decoration: const InputDecoration(
-                    labelText: 'عنوان خادم مزامنة الميدان (اختياري)',
-                    hintText: 'https://api.example.gov.sy')),
-          ),
-          const SizedBox(height: 8),
-          Text(
-              'ملاحظة: المرفقات تُرسل مضمّنة base64 في هذه النسخة. للإنتاج يُفضّل رفعها عبر multipart (انظر docs/FIELD_APP.md).',
-              style: TextStyle(color: context.p.muted, fontSize: 11)),
         ]),
       ),
       AppCard(

@@ -69,9 +69,7 @@ const kPerms = {
   'archive.view': 'عرض الأرشيف والبحث فيه',
   'archive.edit': 'تسجيل موقع المحضر في الأرشيف',
   'archive.attachments': 'إضافة مرفقات المحاضر وحذفها',
-  'field.view': 'العمل الميداني وقائمة المسودات',
-  'field.create': 'إنشاء محضر ميداني',
-  'field.sync': 'مزامنة المسودات الميدانية',
+  'field.view': 'العمل الميداني والتدقيق الميداني',
 };
 
 const kAlertTypes = {
@@ -102,9 +100,7 @@ Map<String, List<String>> defaultPerms() {
     'reports.center',
     'archive.view',
     'archive.attachments',
-    'field.view',
-    'field.create',
-    'field.sync'
+    'field.view'
   ];
   return {
     'sysadmin': kPerms.keys.toList(),
@@ -180,9 +176,7 @@ Map<String, List<String>> defaultPerms() {
       'reports.view',
       'reports.create',
       'reports.print',
-      'field.view',
-      'field.create',
-      'field.sync'
+      'field.view'
     ],
     'user': [
       'taxpayers.view',
@@ -194,9 +188,7 @@ Map<String, List<String>> defaultPerms() {
       'statements.edit',
       'alerts.view',
       'archive.view',
-      'field.view',
-      'field.create',
-      'field.sync'
+      'field.view'
     ],
   };
 }
@@ -276,7 +268,7 @@ class Violation {
       fine: (j['fine'] as num?) ?? 0);
 }
 
-/// مرفق (صورة مخالفة، إشعار، ضبط، قرار...) مرتبط بمحضر أو بمسودة ميدانية.
+/// مرفق (صورة مخالفة، إشعار، ضبط، قرار...) مرتبط بمحضر أو مكلف.
 /// ملف البايتات يُحفظ منفصلاً في AttachmentStore، ويُحفظ هنا الوصف فقط.
 class Attachment {
   String id, ownerId, name, mime, kind, note, uploadedAt, uploadedBy;
