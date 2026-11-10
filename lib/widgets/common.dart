@@ -440,6 +440,36 @@ class Field extends StatelessWidget {
 
 Widget gap(double w) => SizedBox(width: w, height: w);
 
+/// مجموعة بطاقات إحصائية تتكيّف مع عرض الشاشة: عمود واحد على الهاتف،
+/// وعمودان/ثلاثة/أربعة أعمدة متساوية على العرض الكبير ليملأ المكان كله.
+class StatGrid extends StatelessWidget {
+  final List<Widget> children;
+  const StatGrid({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        const spacing = 12.0;
+        final count = maxWidth >= 1100
+            ? 4
+            : maxWidth >= 820
+                ? 3
+                : maxWidth >= 540
+                    ? 2
+                    : 1;
+        final itemWidth = (maxWidth - spacing * (count - 1)) / count;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final child in children)
+              SizedBox(width: itemWidth, child: child),
+          ],
+        );
+      });
+}
+
 Widget rowOf(List<Widget> l, {double g = 12}) {
   final out = <Widget>[];
   for (final w in l) {
@@ -462,13 +492,33 @@ class Drop extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         flex: flex,
         child: InputDecorator(
-          decoration: InputDecoration(labelText: label, enabled: enabled),
+          decoration: InputDecoration(
+            labelText: label,
+            enabled: enabled,
+            filled: true,
+            fillColor: context.p.surfaceAlt,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: kPrimary2.withValues(alpha: .6),
+                width: 1.5,
+              ),
+            ),
+          ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: items.containsKey(value) ? value : items.keys.first,
               isDense: true,
               isExpanded: true,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               items: items.entries
                   .map((e) =>
                       DropdownMenuItem(value: e.key, child: Text(e.value)))

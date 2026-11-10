@@ -824,9 +824,7 @@ class _UsersScreenState extends State<UsersScreen> {
               label: const Text('إنشاء حساب'),
             ),
           ]),
-      Wrap(
-        spacing: 12,
-        runSpacing: 12,
+      StatGrid(
         children: [
           _UserStat(
               label: 'إجمالي الحسابات',
@@ -1462,9 +1460,7 @@ class PermissionsScreen extends StatelessWidget {
           ),
         ],
       ),
-      Wrap(
-        spacing: 12,
-        runSpacing: 12,
+      StatGrid(
         children: [
           _UserStat(
               label: 'عدد الأدوار',
@@ -2078,9 +2074,7 @@ class _AuditScreenState extends State<AuditScreen> {
           ),
         ],
       ),
-      Wrap(
-        spacing: 12,
-        runSpacing: 12,
+      StatGrid(
         children: [
           _UserStat(
               label: 'إجمالي السجلات',
@@ -2935,56 +2929,56 @@ class _UserStat extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 218,
-        height: 92,
+  Widget build(BuildContext context) =>
+      ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 92),
         child: AppCard(
           padding: const EdgeInsets.all(14),
-          child: Row(children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: AlignmentDirectional.topStart,
-                  end: AlignmentDirectional.bottomEnd,
-                  colors: [
-                    color.withValues(alpha: .28),
-                    color.withValues(alpha: .09),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(icon, size: 23, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 23,
-                      fontWeight: FontWeight.w800,
-                      height: 1.05,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: context.p.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+        child: Row(children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  color.withValues(alpha: .28),
+                  color.withValues(alpha: .09),
                 ],
               ),
+              borderRadius: BorderRadius.circular(13),
             ),
-          ]),
-        ),
+            child: Icon(icon, size: 23, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                    height: 1.05,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: context.p.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ),
       );
 }
 

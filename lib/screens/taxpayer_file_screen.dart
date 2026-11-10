@@ -52,24 +52,17 @@ class TaxpayerFileScreen extends StatelessWidget {
             ),
         ],
       ),
-      Wrap(spacing: 12, runSpacing: 12, children: [
-        SizedBox(
-            width: 270,
-            child: StatCard('صور في الأضبارة', '${t.attachments.length}',
-                CupertinoIcons.photo)),
-        SizedBox(
-            width: 270,
-            child: StatCard(
-                'حجم الأضبارة', bytesLabel(total), CupertinoIcons.archivebox)),
-        SizedBox(
-            width: 270,
-            child: StatCard('آخر إضافة', lastDate.isEmpty ? '—' : lastDate,
-                CupertinoIcons.clock)),
-        SizedBox(
-            width: 270,
-            child:
-                StatCard('محاضر المكلف', '$reports', CupertinoIcons.doc_text)),
-      ]),
+      StatGrid(
+        children: [
+          StatCard('صور في الأضبارة', '${t.attachments.length}',
+              CupertinoIcons.photo),
+          StatCard(
+              'حجم الأضبارة', bytesLabel(total), CupertinoIcons.archivebox),
+          StatCard('آخر إضافة', lastDate.isEmpty ? '—' : lastDate,
+              CupertinoIcons.clock),
+          StatCard('محاضر المكلف', '$reports', CupertinoIcons.doc_text),
+        ],
+      ),
       AppCard(
         child: Column(children: [
           Row(children: [

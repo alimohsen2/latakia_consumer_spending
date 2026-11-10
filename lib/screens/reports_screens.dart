@@ -897,7 +897,23 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               InputDecorator(
                 decoration: InputDecoration(
                   isDense: true,
-                  fillColor: context.p.field,
+                  filled: true,
+                  fillColor: context.p.surfaceAlt,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: kPrimary2.withValues(alpha: .6),
+                      width: 1.5,
+                    ),
+                  ),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
@@ -1293,7 +1309,26 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   ctl: orderNo, onChanged: (_) => _touch()),
               Expanded(
                 child: InputDecorator(
-                  decoration: const InputDecoration(labelText: 'تاريخ الأمر'),
+                  decoration: InputDecoration(
+                    labelText: 'تاريخ الأمر',
+                    filled: true,
+                    fillColor: context.p.surfaceAlt,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: kPrimary2.withValues(alpha: .6),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: orderDateOptions
@@ -1302,6 +1337,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                           : null,
                       isDense: true,
                       isExpanded: true,
+                      borderRadius: BorderRadius.circular(16),
                       hint: const Text('اختر التاريخ'),
                       items: [
                         for (final option in orderDateOptions)

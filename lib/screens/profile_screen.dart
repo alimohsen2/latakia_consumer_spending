@@ -800,18 +800,17 @@ class _ProfileStatsRow extends StatelessWidget {
       _Stat('إجمالي الغرامات', money(fines), CupertinoIcons.money_dollar,
           kGold),
     ];
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final stat in stats)
-          SizedBox(
-            width: 216,
-            height: 128,
-            child: AppCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return StatGrid(
+        children: [
+          for (final stat in stats)
+            SizedBox(
+              height: 128,
+              child: AppCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [

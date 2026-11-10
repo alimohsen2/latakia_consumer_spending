@@ -224,8 +224,8 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
               height: 48,
               padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
               decoration: BoxDecoration(
-                color: context.p.field,
-                borderRadius: BorderRadius.circular(13),
+                color: context.p.surfaceAlt,
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: context.p.border),
               ),
               child: DropdownButtonHideUnderline(
@@ -233,7 +233,7 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
                   value: selectedValue,
                   isDense: true,
                   isExpanded: true,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   selectedItemBuilder: (context) => items.entries
                       .map((entry) =>
                           filterOption(entry.value, itemIcon?.call(entry.key)))
@@ -800,28 +800,20 @@ class _TaxpayersScreenState extends State<TaxpayersScreen> {
           },
         ),
       ),
-      Wrap(spacing: 12, runSpacing: 12, children: [
-        SizedBox(
-            width: 240,
-            child: statTile('إجمالي المكلفين', '$total',
-                CupertinoIcons.person_2, kPrimary)),
-        SizedBox(
-            width: 240,
-            child: statTile('المكلفون الفعالون', '$active',
-                CupertinoIcons.checkmark_seal, kPrimary2)),
-        SizedBox(
-            width: 240,
-            child: statTile('المتوقفون مؤقتاً', '$temporarilyStopped',
-                CupertinoIcons.pause_circle, kGold)),
-        SizedBox(
-            width: 240,
-            child: statTile('المتوقفون نهائياً', '$permanentlyStopped',
-                CupertinoIcons.stop_circle, kRed)),
-        SizedBox(
-            width: 240,
-            child: statTile('انخفاض المبيعات', '$lowSales',
-                CupertinoIcons.arrow_down_right, kRed)),
-      ]),
+      StatGrid(
+        children: [
+          statTile('إجمالي المكلفين', '$total',
+              CupertinoIcons.person_2, kPrimary),
+          statTile('المكلفون الفعالون', '$active',
+              CupertinoIcons.checkmark_seal, kPrimary2),
+          statTile('المتوقفون مؤقتاً', '$temporarilyStopped',
+              CupertinoIcons.pause_circle, kGold),
+          statTile('المتوقفون نهائياً', '$permanentlyStopped',
+              CupertinoIcons.stop_circle, kRed),
+          statTile('انخفاض المبيعات', '$lowSales',
+              CupertinoIcons.arrow_down_right, kRed),
+        ],
+      ),
       filterCard,
       if (sel.isNotEmpty)
         Container(
