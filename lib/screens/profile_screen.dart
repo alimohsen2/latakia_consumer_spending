@@ -152,7 +152,9 @@ class ProfileScreen extends StatelessWidget {
                     _InfoCard(
                       icon: CupertinoIcons.person_2_fill,
                       label: 'المسؤول المباشر',
-                      value: manager?.name ?? '—',
+                      value: roleHasManager(user.role)
+                          ? (manager?.name ?? '—')
+                          : '',
                     ),
                     _InfoCard(
                       icon: CupertinoIcons.calendar_circle,

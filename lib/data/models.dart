@@ -29,6 +29,20 @@ String? headRoleForDivision(String division) => kDivisionHeadRoles[division];
 
 bool isDivisionHeadRole(String role) => divisionForHeadRole(role) != null;
 
+/// الأدوار التي لها مسؤول مباشر من التسلسل التنظيمي.
+/// «مدير المالية» و«مدير النظام» لا رئيس أعلى لهما — حقول المسؤول تبقى فارغة.
+const kRolesWithManager = {
+  'sectionHead',
+  'infoSectionHead',
+  'deptHead',
+  'fieldHead',
+  'officeHead',
+  'archiveHead',
+  'monitor',
+  'user',
+};
+bool roleHasManager(String role) => kRolesWithManager.contains(role);
+
 const kRoles = {
   'sysadmin': 'مدير النظام',
   'financeDirector': 'مدير المالية',

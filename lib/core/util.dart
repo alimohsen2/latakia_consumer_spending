@@ -27,7 +27,7 @@ String fmtDT(DateTime d) => DateFormat('yyyy/MM/dd HH:mm').format(d);
 String fmtDT12(DateTime d) =>
     '${DateFormat('yyyy/MM/dd').format(d)} ${fmtTime12(d)}';
 String fmtTime12(DateTime d) =>
-    '${(d.hour % 12 == 0 ? 12 : d.hour % 12).toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'صباحاً' : 'مساءً'}';
+    '${(d.hour % 12 == 0 ? 12 : d.hour % 12).toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}  ${d.hour < 12 ? 'صباحاً' : 'مساءً'}';
 String ymOf(DateTime d) => DateFormat('yyyy-MM').format(d);
 
 int _seq = 0;

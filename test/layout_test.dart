@@ -284,7 +284,7 @@ void main() {
     expect(find.text('الميدانية'), findsOneWidget);
     expect(find.text('الشعبة الميدانية'), findsNothing);
     expect(find.textContaining('2025/03/04'), findsOneWidget);
-    expect(find.textContaining('2:27 مساءً'), findsOneWidget);
+    expect(find.textContaining('2:27  مساءً'), findsOneWidget);
     expect(find.textContaining('اسم صاحب الدور'), findsOneWidget);
     expect(find.text('مدير النظام'), findsNothing);
     expect(find.text('مستخدم مكتبي'), findsNothing);

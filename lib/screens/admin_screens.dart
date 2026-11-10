@@ -668,7 +668,9 @@ class _UsersScreenState extends State<UsersScreen> {
                     _InfoRow(
                         icon: CupertinoIcons.person_2_fill,
                         label: 'المسؤول المباشر',
-                        value: manager?.name ?? '—'),
+                        value: roleHasManager(user.role)
+                            ? (manager?.name ?? '—')
+                            : ''),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -859,6 +861,7 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   String _managerNameOf(AppUser user) {
+    if (!roleHasManager(user.role)) return '';
     for (final candidate in context.read<AppStore>().users) {
       if (candidate.id == user.managerId) {
         return candidate.name;
@@ -3656,10 +3659,11 @@ class _UserCard extends StatelessWidget {
                   icon: CupertinoIcons.building_2_fill,
                   label: division,
                   color: kPrimary2),
-            _MetaChip(
-                icon: CupertinoIcons.person_2_fill,
-                label: 'المسؤول: $managerName',
-                color: kGold),
+            if (managerName.isNotEmpty)
+              _MetaChip(
+                  icon: CupertinoIcons.person_2_fill,
+                  label: 'المسؤول: $managerName',
+                  color: kGold),
           ]),
           const SizedBox(height: 14),
           Wrap(
