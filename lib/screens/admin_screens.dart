@@ -2105,55 +2105,74 @@ class _AuditScreenState extends State<AuditScreen> {
         ],
       ),
       AppCard(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: AlignmentDirectional.topStart,
                     end: AlignmentDirectional.bottomEnd,
                     colors: [kPrimary2, Color(0xFF17574E)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimary.withValues(alpha: .28),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: const Icon(CupertinoIcons.doc_text,
-                    size: 19, color: Colors.white),
+                    size: 22, color: Colors.white),
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'تصفية سجل العمليات',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'العثور على العمليات',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'ابحث بالمستخدم • العملية • العنصر المتأثر',
+                      style: TextStyle(
+                          color: context.p.muted, fontSize: 11.5, height: 1.35),
+                    ),
+                  ],
                 ),
               ),
               Container(
                 padding:
-                    const EdgeInsetsDirectional.fromSTEB(12, 7, 12, 7),
+                    const EdgeInsetsDirectional.fromSTEB(11, 7, 11, 7),
                 decoration: BoxDecoration(
                   color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kGold.withValues(alpha: .35)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kGold.withValues(alpha: .4)),
                 ),
                 child: Row(children: [
                   const Icon(CupertinoIcons.lock_fill,
-                      size: 13, color: Color(0xFF8A5A00)),
+                      size: 12, color: Color(0xFF8A5A00)),
                   const SizedBox(width: 6),
                   Text(
-                    'سجل للقراءة فقط',
+                    'للقراءة فقط',
                     style: TextStyle(
                       color: context.p.isDark
                           ? const Color(0xFFE9CEA8)
                           : const Color(0xFF6B4A0C),
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -2161,41 +2180,98 @@ class _AuditScreenState extends State<AuditScreen> {
               ),
             ]),
             const SizedBox(height: 14),
-            rowOf([
-              Drop(
-                'عرض عمليات المستخدم',
-                userFilter,
-                userOptions,
-                (value) => setState(() => userFilter = value),
+            TextField(
+              controller: q,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
               ),
-              Expanded(
-                child: TextField(
-                  controller: q,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    labelText: 'بحث في السجل',
-                    prefixIcon: const Icon(CupertinoIcons.search),
-                    suffixIcon: q.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(CupertinoIcons.xmark_circle_fill,
-                                size: 19),
-                            onPressed: () {
-                              q.clear();
-                              setState(() {});
-                            },
-                          ),
+              decoration: InputDecoration(
+                hintText: 'ابحث بكلمة من السجل…',
+                prefixIcon: const Icon(CupertinoIcons.search, size: 20),
+                suffixIcon: q.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(CupertinoIcons.xmark_circle_fill,
+                            size: 19),
+                        onPressed: () {
+                          q.clear();
+                          setState(() {});
+                        },
+                      ),
+                filled: true,
+                fillColor: context.p.surfaceAlt,
+                contentPadding:
+                    const EdgeInsetsDirectional.fromSTEB(15, 17, 15, 17),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: BorderSide(
+                    color: kPrimary2.withValues(alpha: .6),
+                    width: 1.5,
                   ),
                 ),
               ),
-            ]),
-            const SizedBox(height: 10),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                'عدد العمليات المعروضة: ${list.length}',
-                style: TextStyle(color: context.p.muted, fontSize: 12),
-              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _IconDropdown(
+                    icon: CupertinoIcons.person_crop_circle,
+                    label: 'عرض عمليات المستخدم',
+                    value: userFilter,
+                    options: userOptions,
+                    onChanged: (v) => setState(() => userFilter = v),
+                  ),
+                ),
+                if (userFilter.isNotEmpty || q.text.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      q.clear();
+                      setState(() => userFilter = '');
+                    },
+                    icon: const Icon(CupertinoIcons.clear, size: 15),
+                    label: const Text(
+                      'مسح',
+                      style: TextStyle(fontSize: 12.5),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(children: [
+                  const Icon(CupertinoIcons.doc_text_search,
+                      size: 13, color: kPrimary2),
+                  const SizedBox(width: 6),
+                  Text(
+                    'عدد العمليات المعروضة: ${list.length}',
+                    style: TextStyle(
+                        color: context.p.muted, fontSize: 12, height: 1),
+                  ),
+                ]),
+                if (list.isNotEmpty)
+                  Text(
+                    'من ${st.audit.length} سجل',
+                    style: TextStyle(
+                        color: context.p.muted, fontSize: 11, height: 1),
+                  ),
+              ],
             ),
           ],
         ),
