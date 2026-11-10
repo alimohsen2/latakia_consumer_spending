@@ -278,7 +278,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('معطل مؤقتًا').last);
     await tester.pumpAndSettle();
-    expect(find.text('مستخدم ميداني'), findsOneWidget);
+    expect(find.text('field1'), findsOneWidget);
+    expect(find.text('مستخدم ميداني'), findsNothing);
     expect(find.byTooltip('رفع صورة المستخدم'), findsNothing);
     expect(find.text('0997654321'), findsOneWidget);
     expect(find.text('الميدانية'), findsOneWidget);
