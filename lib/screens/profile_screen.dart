@@ -197,91 +197,144 @@ class ProfileScreen extends StatelessWidget {
         final side = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _CollapsibleSection(
-              title: 'الصلاحيات',
-              subtitle: user.role == 'sysadmin'
-                  ? 'مدير النظام يملك كل الصلاحيات'
-                  : 'الصلاحيات المسندة لهذا الحساب',
-              icon: CupertinoIcons.lock_shield_fill,
-              accent: kGold,
-              trailing: '${permissions.length}',
-              defaultOpen: true,
-              children: [
-                const SizedBox(height: 8),
-                if (user.role == 'sysadmin')
-                  Container(
-                    padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-                    decoration: BoxDecoration(
-                      color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: kGold.withValues(alpha: .35)),
+            AppCard(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: AlignmentDirectional.topStart,
+                          end: AlignmentDirectional.bottomEnd,
+                          colors: [Color(0xFFA98545), Color(0xFF7C5A1E)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(CupertinoIcons.lock_shield_fill,
+                          size: 20, color: Colors.white),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(CupertinoIcons.sparkles,
-                            size: 17, color: kGold),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'صلاحيات كاملة على النظام بوصفه مدير النظام',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'الصلاحيات',
                             style: TextStyle(
-                              color: context.p.isDark
-                                  ? const Color(0xFFE9CEA8)
-                                  : const Color(0xFF6B4A0C),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          Text(
+                            user.role == 'sysadmin'
+                                ? 'مدير النظام يملك كل الصلاحيات'
+                                : 'الصلاحيات المسندة لهذا الحساب',
+                            style: TextStyle(
+                              color: context.p.muted,
+                              fontSize: 11.5,
                               height: 1.4,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  )
-                else if (permissions.isEmpty)
-                  Text(
-                    'لا توجد صلاحيات مسندة لهذا الحساب.',
-                    style: TextStyle(color: context.p.muted, fontSize: 13),
-                  )
-                else
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final permission in permissions)
-                        Container(
-                          padding:
-                              const EdgeInsetsDirectional.fromSTEB(8, 6, 12, 6),
-                          decoration: BoxDecoration(
-                            color: context.p.isDark
-                                ? Colors.white.withValues(alpha: .06)
-                                : const Color(0xFFF4F6F5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.p.isDark
-                                  ? const Color(0xFF29302F)
-                                  : const Color(0xFFE0E7E5),
+                    Container(
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
+                      decoration: BoxDecoration(
+                        color: context.p.isDark
+                            ? Colors.white.withValues(alpha: .08)
+                            : const Color(0xFFF0F4F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${permissions.length}',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 14),
+                  if (user.role == 'sysadmin')
+                    Container(
+                      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+                      decoration: BoxDecoration(
+                        color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: kGold.withValues(alpha: .35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(CupertinoIcons.sparkles,
+                              size: 17, color: kGold),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'صلاحيات كاملة على النظام بوصفه مدير النظام',
+                              style: TextStyle(
+                                color: context.p.isDark
+                                    ? const Color(0xFFE9CEA8)
+                                    : const Color(0xFF6B4A0C),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                height: 1.4,
+                              ),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(CupertinoIcons.checkmark_circle_fill,
-                                  size: 14, color: kPrimary2),
-                              const SizedBox(width: 6),
-                              Text(
-                                kPerms[permission] ?? permission,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
+                        ],
+                      ),
+                    )
+                  else if (permissions.isEmpty)
+                    Text(
+                      'لا توجد صلاحيات مسندة لهذا الحساب.',
+                      style: TextStyle(color: context.p.muted, fontSize: 13),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final permission in permissions)
+                          Container(
+                            padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 12, 6),
+                            decoration: BoxDecoration(
+                              color: context.p.isDark
+                                  ? Colors.white.withValues(alpha: .06)
+                                  : const Color(0xFFF4F6F5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: context.p.isDark
+                                    ? const Color(0xFF29302F)
+                                    : const Color(0xFFE0E7E5),
                               ),
-                            ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(CupertinoIcons.checkmark_circle_fill,
+                                    size: 14, color: kPrimary2),
+                                const SizedBox(width: 6),
+                                Text(
+                                  kPerms[permission] ?? permission,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-              ],
+                      ],
+                    ),
+                ],
+              ),
             ),
           ],
         );
@@ -304,12 +357,13 @@ class ProfileScreen extends StatelessWidget {
           ],
         );
       }),
-      _ReportsSection(
-        reports: reports,
-        store: st,
-        user: user,
-        isSelf: isSelf,
-      ),
+      if (reports.isNotEmpty)
+        _ReportsSection(
+          reports: reports,
+          store: st,
+          user: user,
+          isSelf: isSelf,
+        ),
     ]);
   }
 
@@ -699,8 +753,6 @@ class _CollapsibleSection extends StatefulWidget {
   final String title, subtitle;
   final IconData icon;
   final Color accent;
-  final String? trailing;
-  final bool defaultOpen;
   final List<Widget> children;
   const _CollapsibleSection({
     required this.title,
@@ -708,8 +760,6 @@ class _CollapsibleSection extends StatefulWidget {
     required this.icon,
     required this.accent,
     required this.children,
-    this.trailing,
-    this.defaultOpen = true,
   });
 
   @override
@@ -720,14 +770,7 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
   bool _open = true;
 
   @override
-  void initState() {
-    super.initState();
-    _open = widget.defaultOpen;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final dark = context.p.isDark;
     return AppCard(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
       child: Column(
@@ -783,24 +826,6 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
                       ],
                     ),
                   ),
-                  if (widget.trailing != null)
-                    Container(
-                      padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
-                      margin: const EdgeInsetsDirectional.only(end: 8),
-                      decoration: BoxDecoration(
-                        color: dark
-                            ? Colors.white.withValues(alpha: .08)
-                            : const Color(0xFFF0F4F2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        widget.trailing!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
                   AnimatedRotation(
                     turns: _open ? .5 : 0,
                     duration: const Duration(milliseconds: 220),
