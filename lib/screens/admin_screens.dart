@@ -996,28 +996,28 @@ class _UsersScreenState extends State<UsersScreen> {
                 cellText(_stampDate(u.createdAt)),
                 cellText(_stampTime(u.createdAt)),
                 StatusBadge(_userStatusLabel(u.status)),
-                Wrap(spacing: 2, children: [
-                  IconButton(
+                Wrap(spacing: 8, children: [
+                  _CircleIconButton(
                     tooltip: 'صفحة المستخدم',
                     onPressed: () => context.go('/users/${u.id}/profile'),
-                    icon: const Icon(CupertinoIcons.person_crop_circle_fill,
-                        size: 20, color: kPrimary2),
-                    visualDensity: VisualDensity.compact,
+                    icon: CupertinoIcons.person_crop_circle_fill,
+                    color: kPrimary2,
+                    size: 40,
                   ),
-                  IconButton(
+                  _CircleIconButton(
                     tooltip: 'تفاصيل وسجل الحساب',
                     onPressed: () => _showAccountHistory(u),
-                    icon: const Icon(CupertinoIcons.info,
-                        size: 20, color: kGold),
-                    visualDensity: VisualDensity.compact,
+                    icon: CupertinoIcons.info,
+                    color: kGold,
+                    size: 40,
                   ),
                   if (u.status != 'closed')
-                    IconButton(
+                    _CircleIconButton(
                       tooltip: 'تعديل المستخدم',
                       onPressed: () => _edit(st, u),
-                      icon: const Icon(CupertinoIcons.pencil,
-                          size: 17, color: kPrimary2),
-                      visualDensity: VisualDensity.compact,
+                      icon: CupertinoIcons.pencil,
+                      color: kPrimary2,
+                      size: 40,
                     ),
                 ]),
               ],
@@ -3104,43 +3104,44 @@ class _UserCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              IconButton(
+              _CircleIconButton(
                 tooltip: 'صفحة المستخدم',
                 onPressed: () => context.go('/users/${user.id}/profile'),
-                icon: const Icon(CupertinoIcons.person_crop_circle_fill,
-                    size: 22, color: kPrimary2),
+                icon: CupertinoIcons.person_crop_circle_fill,
+                color: kPrimary2,
               ),
-              IconButton(
+              const SizedBox(width: 8),
+              _CircleIconButton(
                 tooltip: 'تفاصيل وسجل الحساب',
                 onPressed: onHistory,
-                icon: const Icon(CupertinoIcons.info,
-                    size: 22, color: kGold),
+                icon: CupertinoIcons.info,
+                color: kGold,
               ),
+              const SizedBox(width: 8),
               if (onEdit != null)
-                IconButton(
+                _CircleIconButton(
                   tooltip: 'تعديل المستخدم',
                   onPressed: onEdit,
-                  icon: const Icon(CupertinoIcons.pencil,
-                      size: 19, color: kPrimary2),
+                  icon: CupertinoIcons.pencil,
+                  color: kPrimary2,
                 ),
+              if (onEdit != null) const SizedBox(width: 8),
               if (onToggleActive != null)
-                IconButton(
+                _CircleIconButton(
                   tooltip: user.active ? 'تعطيل مؤقتًا' : 'إعادة تفعيل',
                   onPressed: onToggleActive,
-                  icon: Icon(
-                    user.active
-                        ? CupertinoIcons.pause_circle_fill
-                        : CupertinoIcons.checkmark_seal_fill,
-                    size: 20,
-                    color: user.active ? kGold : const Color(0xFF34C759),
-                  ),
+                  icon: user.active
+                      ? CupertinoIcons.pause_circle_fill
+                      : CupertinoIcons.checkmark_seal_fill,
+                  color: user.active ? kGold : const Color(0xFF34C759),
                 ),
+              if (onToggleActive != null) const SizedBox(width: 8),
               if (onClose != null)
-                IconButton(
+                _CircleIconButton(
                   tooltip: 'إغلاق الحساب نهائيًا',
                   onPressed: onClose,
-                  icon: const Icon(CupertinoIcons.lock_fill,
-                      size: 19, color: kRed),
+                  icon: CupertinoIcons.lock_fill,
+                  color: kRed,
                 ),
             ],
           ),
@@ -3927,4 +3928,39 @@ class _FormSectionHeader extends StatelessWidget {
           ),
         ),
       ]);
+}
+
+/// زر إجراء دائري بحدود وأيقونة متناسبة — فاخر وواضح.
+class _CircleIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final double size;
+  const _CircleIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+    this.size = 46,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      icon: Icon(icon, size: size * .48),
+      style: IconButton.styleFrom(
+        backgroundColor: color.withValues(alpha: .12),
+        shape: const CircleBorder(),
+        fixedSize: Size(size, size),
+        foregroundColor: color,
+        elevation: 0,
+        highlightColor: color.withValues(alpha: .18),
+        hoverColor: color.withValues(alpha: .2),
+        side: BorderSide(color: color.withValues(alpha: .35), width: 1),
+      ),
+    );
+  }
 }
