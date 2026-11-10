@@ -103,7 +103,7 @@ class ProfileScreen extends StatelessWidget {
             _InfoCard(
               icon: CupertinoIcons.at,
               label: 'اسم المستخدم',
-              value: user.username.isEmpty ? '—' : '@${user.username}',
+              value: user.username.isEmpty ? '—' : user.username,
             ),
             _InfoCard(
               icon: CupertinoIcons.phone_fill,
@@ -215,6 +215,7 @@ class ProfileScreen extends StatelessWidget {
         reports: reports,
         store: st,
         user: user,
+        isSelf: isSelf,
       ),
     ]);
   }
@@ -309,18 +310,6 @@ class _HeroCard extends StatelessWidget {
               bottom: -110,
               end: -72,
               child: _glow(kPrimary2.withValues(alpha: .35), 280),
-            ),
-            PositionedDirectional(
-              top: 26,
-              end: 26,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: .14), width: 1.4),
-                ),
-                child: const SizedBox(width: 88, height: 88),
-              ),
             ),
             PositionedDirectional(
               bottom: -26,
@@ -437,7 +426,7 @@ class _HeroCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                '@${user.username}'
+                                '${user.username}'
                                 '${user.phone.trim().isEmpty ? '' : ' · ${user.phone.trim()}'}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -968,10 +957,12 @@ class _ReportsSection extends StatelessWidget {
   final List<Report> reports;
   final AppStore store;
   final AppUser user;
+  final bool isSelf;
   const _ReportsSection({
     required this.reports,
     required this.store,
     required this.user,
+    required this.isSelf,
   });
 
   @override
@@ -981,7 +972,7 @@ class _ReportsSection extends StatelessWidget {
       children: [
         _SectionHeader(
           icon: CupertinoIcons.doc_text,
-          title: 'المحاضر التي أنشأها',
+          title: isSelf ? 'محاضر قمت بإنشائها' : 'محاضر من إنشاء ${user.name}',
           accent: 'teal',
         ),
         const SizedBox(height: 4),
