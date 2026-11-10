@@ -39,33 +39,36 @@ class _AppCardState extends State<AppCard> {
         onTap: widget.onTap,
         behavior: interactive ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, lifted ? -2 : 0, 0),
+          transform: Matrix4.translationValues(0, lifted ? -4 : 0, 0)
+            ..scale(lifted ? 1.015 : 1.0),
           transformAlignment: Alignment.center,
           padding: widget.padding,
           decoration: ShapeDecoration(
-            color: context.p.surface,
+            color: lifted
+                ? Color.alphaBlend(
+                    kGold.withValues(alpha: .07), context.p.surface)
+                : context.p.surface,
             shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(28),
               side: BorderSide(
                 color: lifted
-                    ? kPrimary2.withValues(alpha: .4)
+                    ? kGold.withValues(alpha: .9)
                     : context.p.border,
-                width: lifted ? 1.1 : .5,
+                width: lifted ? 1.6 : .5,
               ),
             ),
             shadows: [
               BoxShadow(
                 color: lifted
-                    ? (context.p.isDark
-                        ? const Color(0x3F000000)
-                        : kPrimary2.withValues(alpha: .12))
+                    ? kGold.withValues(
+                        alpha: context.p.isDark ? .30 : .38)
                     : (context.p.isDark
                         ? const Color(0x33000000)
                         : const Color(0x0F000000)),
-                blurRadius: lifted ? 18 : 10,
-                offset: lifted ? const Offset(0, 8) : const Offset(0, 2),
+                blurRadius: lifted ? 28 : 10,
+                offset: lifted ? const Offset(0, 14) : const Offset(0, 2),
               )
             ],
           ),
@@ -396,13 +399,13 @@ class _HoverRowState extends State<_HoverRow> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
           decoration: BoxDecoration(
-            color: active ? kGold.withValues(alpha: .06) : Colors.transparent,
+            color: active ? kGold.withValues(alpha: .09) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: active
-                  ? kGold.withValues(alpha: .85)
+                  ? kGold.withValues(alpha: .95)
                   : kGold.withValues(alpha: 0),
-              width: 1.3,
+              width: 1.5,
             ),
           ),
           child: widget.child,
