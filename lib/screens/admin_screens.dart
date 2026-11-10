@@ -1632,86 +1632,19 @@ class PermissionsScreen extends StatelessWidget {
                 ),
               ]),
             ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 980),
-                child: Table(
-                  border: TableBorder.all(
-                      color: context.p.border, width: .6),
-                  columnWidths: const {0: FlexColumnWidth(3)},
-                  defaultColumnWidth: const FlexColumnWidth(1.25),
-                  children: [
-                    TableRow(
-                      decoration:
-                          BoxDecoration(color: context.p.surfaceAlt),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              14, 12, 14, 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('الإجراء',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14,
-                                      color: context.p.text)),
-                              const SizedBox(height: 3),
-                              Text(
-                                'الاسم البرمجي لكل صلاحية',
-                                style: TextStyle(
-                                    color: context.p.muted, fontSize: 10.5),
-                              ),
-                            ],
-                          ),
-                        ),
-                        for (var i = 0; i < roles.length; i++)
-                          _RoleHeaderCell(
-                            roleKey: roles[i],
-                            accentIndex: i,
-                          ),
-                      ],
-                    ),
-                    for (var index = 0;
-                        index < kPerms.entries.length;
-                        index++) ...[
-                      _permRow(
-                          context, st, kPerms.entries.elementAt(index),
-                          roles, index,
-                          dark: dark),
-                    ],
-                    TableRow(
-                      decoration:
-                          BoxDecoration(color: context.p.surfaceAlt),
-                      children: [
-                        const Padding(
-                          padding:
-                              EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
-                          child: Text(
-                            'إجمالي الصلاحيات',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13),
-                          ),
-                        ),
-                        for (final r in roles)
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Center(
-                              child: Text(
-                                '${(st.perms[r] ?? []).length}',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final table =
+                    _permMatrixTable(context, st, roles, dark: dark);
+                if (constraints.maxWidth >= 980) return table;
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 980),
+                    child: table,
+                  ),
+                );
+              },
             ),
           ]),
         ),
@@ -1720,20 +1653,255 @@ class PermissionsScreen extends StatelessWidget {
   }
 }
 
+class _PermGroup {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final List<String> keys;
+  const _PermGroup(this.icon, this.title, this.color, this.keys);
+}
+
+const _definedPermGroups = <(IconData, String, Color, List<String>)>[
+  (
+    CupertinoIcons.person_3_fill,
+    'المكلفون والبحث',
+    Color(0xFF7FB8FF),
+    ['taxpayers.view', 'taxpayers.edit', 'taxpayers.status']
+  ),
+  (
+    CupertinoIcons.doc_text,
+    'المحاضر',
+    Color(0xFF9FE3C0),
+    [
+      'reports.view',
+      'reports.create',
+      'reports.approve',
+      'reports.endorse',
+      'reports.print',
+      'reports.cancel'
+    ]
+  ),
+  (
+    CupertinoIcons.book,
+    'السجلات والمتابعة',
+    kGold,
+    ['registers.view', 'registers.edit', 'statements.edit']
+  ),
+  (
+    CupertinoIcons.eye_fill,
+    'التحليلات والتنبيهات',
+    Color(0xFFFFA99B),
+    ['analytics.view', 'alerts.view', 'alerts.route']
+  ),
+  (
+    CupertinoIcons.briefcase_fill,
+    'التقارير',
+    Color(0xFFD6C2FF),
+    ['reports.center']
+  ),
+  (
+    CupertinoIcons.lock_shield_fill,
+    'المستخدمون والصلاحيات',
+    kPrimary2,
+    [
+      'users.manage',
+      'permissions.view',
+      'permissions.manage',
+      'serials.manage'
+    ]
+  ),
+  (
+    CupertinoIcons.checkmark_shield_fill,
+    'التدقيق والسلامة',
+    Color(0xFF9EC5FF),
+    ['audit.view', 'integrity.view']
+  ),
+  (
+    CupertinoIcons.archivebox_fill,
+    'الأرشيف',
+    Color(0xFFFFD27A),
+    ['archive.view', 'archive.edit', 'archive.attachments']
+  ),
+  (
+    CupertinoIcons.map_fill,
+    'العمل الميداني',
+    Color(0xFFB7F0D8),
+    ['field.view']
+  ),
+  (
+    CupertinoIcons.square_grid_2x2_fill,
+    'الإعدادات',
+    Color(0xFFE8B4B8),
+    ['settings.manage']
+  ),
+];
+
+final _permGroups = _computePermGroups();
+
+/// يجمع الصلاحيات حسب الأقسام، ويُلحق أي صلاحية جديدة في مجموعة «أخرى»
+/// حتى لا تضيع عند إضافة صلاحيات مستقبلًا.
+List<_PermGroup> _computePermGroups() {
+  final used = <String>{};
+  final groups = <_PermGroup>[];
+  for (final (icon, title, color, keys) in _definedPermGroups) {
+    final valid = <String>[
+      for (final key in keys)
+        if (kPerms.containsKey(key) && used.add(key)) key,
+    ];
+    if (valid.isNotEmpty) groups.add(_PermGroup(icon, title, color, valid));
+  }
+  final rest = kPerms.keys.where((key) => !used.contains(key)).toList();
+  if (rest.isNotEmpty) {
+    groups.add(_PermGroup(CupertinoIcons.square_grid_2x2_fill,
+        'صلاحيات أخرى', kPrimary, rest));
+  }
+  return groups;
+}
+
+Widget _permMatrixTable(BuildContext context, AppStore st,
+    List<String> roles, {required bool dark}) {
+  final grants = <String, Set<String>>{
+    for (final r in roles) r: (st.perms[r] ?? const <String>[]).toSet(),
+  };
+  var zebra = 0;
+  return Table(
+    border: TableBorder.all(color: context.p.border, width: .6),
+    columnWidths: const {0: FlexColumnWidth(3.2)},
+    defaultColumnWidth: const FlexColumnWidth(1.1),
+    children: [
+      TableRow(
+        decoration: BoxDecoration(color: context.p.surfaceAlt),
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(CupertinoIcons.lock_shield_fill,
+                        size: 14, color: kPrimary2),
+                    const SizedBox(width: 7),
+                    Text('الإجراء',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: context.p.text)),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text('الاسم البرمجي لكل صلاحية',
+                    style:
+                        TextStyle(color: context.p.muted, fontSize: 10.5)),
+              ],
+            ),
+          ),
+          for (var i = 0; i < roles.length; i++)
+            _RoleHeaderCell(
+              roleKey: roles[i],
+              accentIndex: i,
+              granted: grants[roles[i]]!.length,
+              total: kPerms.length,
+            ),
+        ],
+      ),
+      for (final group in _permGroups) ...[
+        TableRow(
+          decoration: BoxDecoration(
+            color: group.color.withValues(alpha: dark ? .20 : .10),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: group.color.withValues(alpha: .25),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(group.icon, size: 17, color: group.color),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(group.title,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w800)),
+                        Text('${group.keys.length} صلاحية',
+                            style: TextStyle(
+                                fontSize: 9.5, color: context.p.muted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final _ in roles) const SizedBox(height: 36),
+          ],
+        ),
+        for (final key in group.keys)
+          _permRow(context, st, MapEntry(key, kPerms[key]!), roles,
+              zebra: zebra++ % 2 == 1,
+              dark: dark,
+              granted: {
+                for (final r in roles) r: grants[r]!.contains(key),
+              }),
+      ],
+      TableRow(
+        decoration: BoxDecoration(
+          color: kPrimary2.withValues(alpha: dark ? .16 : .08),
+        ),
+        children: [
+          const Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+            child: Text('إجمالي الصلاحيات',
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+          ),
+          for (final r in roles)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${grants[r]!.length}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text('من ${kPerms.length}',
+                        style:
+                            TextStyle(fontSize: 9, color: context.p.muted)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    ],
+  );
+}
+
 TableRow _permRow(BuildContext context, AppStore st,
-    MapEntry<String, String> entry, List<String> roles, int index,
-    {required bool dark}) {
+    MapEntry<String, String> entry, List<String> roles,
+    {required bool zebra,
+    required bool dark,
+    required Map<String, bool> granted}) {
   return TableRow(
     decoration: BoxDecoration(
-      color: index.isOdd
+      color: zebra
           ? (dark
-              ? Colors.white.withValues(alpha: .03)
+              ? Colors.white.withValues(alpha: .035)
               : const Color(0xFFFAFBFA))
           : null,
     ),
     children: [
       Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(14, 7, 12, 7),
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 12, 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1745,40 +1913,93 @@ TableRow _permRow(BuildContext context, AppStore st,
             const SizedBox(height: 2),
             Text(
               entry.key,
-              style:
-                  TextStyle(fontSize: 9.5, color: context.p.muted),
+              style: TextStyle(fontSize: 9.5, color: context.p.muted),
             ),
           ],
         ),
       ),
       for (final r in roles)
-        InkWell(
-          onTap: () => st.togglePerm(r, entry.key),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Center(
-              child: Checkbox(
-                value: (st.perms[r] ?? []).contains(entry.key),
-                onChanged: (_) => st.togglePerm(r, entry.key),
-                activeColor: kPrimary2,
-                checkColor: Colors.white,
-                side: BorderSide(
-                    color: context.p.muted.withValues(alpha: .5), width: 1.2),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6)),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
+        Tooltip(
+          message: '${kRoles[r] ?? r}: ${entry.value}',
+          child: _PermCell(
+            granted: granted[r]!,
+            onToggle: () => st.togglePerm(r, entry.key),
           ),
         ),
     ],
   );
 }
 
+/// زر تفعيل مدور فخم بدل مربع الاختيار الافتراضي.
+class _PermCell extends StatelessWidget {
+  final bool granted;
+  final VoidCallback onToggle;
+  const _PermCell({required this.granted, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onToggle,
+      splashColor: kPrimary2.withValues(alpha: .18),
+      highlightColor: kPrimary2.withValues(alpha: .08),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: granted
+                  ? const LinearGradient(
+                      begin: AlignmentDirectional.topStart,
+                      end: AlignmentDirectional.bottomEnd,
+                      colors: [Color(0xFF2E8B6F), Color(0xFF17574E)])
+                  : null,
+              color: granted ? null : context.p.surface,
+              border: Border.all(
+                color: granted
+                    ? Colors.transparent
+                    : context.p.muted.withValues(alpha: .45),
+                width: 1.3,
+              ),
+              boxShadow: granted
+                  ? [
+                      BoxShadow(
+                        color: kPrimary2.withValues(alpha: .30),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Icon(
+              CupertinoIcons.checkmark_alt,
+              size: granted ? 18 : 15,
+              color: granted
+                  ? Colors.white
+                  : context.p.muted.withValues(alpha: .35),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RoleHeaderCell extends StatelessWidget {
   final String roleKey;
   final int accentIndex;
-  const _RoleHeaderCell({required this.roleKey, required this.accentIndex});
+  final int granted;
+  final int total;
+  const _RoleHeaderCell({
+    required this.roleKey,
+    required this.accentIndex,
+    required this.granted,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1787,14 +2008,23 @@ class _RoleHeaderCell extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       child: Column(children: [
         Container(
-          width: 42,
-          height: 42,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: .16),
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                color.withValues(alpha: .42),
+                color.withValues(alpha: .14),
+              ],
+            ),
             shape: BoxShape.circle,
+            border:
+                Border.all(color: color.withValues(alpha: .45), width: 1.2),
           ),
           child: Icon(_roleIcons[roleKey] ?? CupertinoIcons.person_fill,
-              size: 19, color: color),
+              size: 21, color: color),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1803,6 +2033,19 @@ class _RoleHeaderCell extends StatelessWidget {
           maxLines: 2,
           style: const TextStyle(
               fontSize: 11.5, fontWeight: FontWeight.w700, height: 1.25),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '$granted / $total',
+            style: TextStyle(
+                fontSize: 9.5, fontWeight: FontWeight.w700, color: color),
+          ),
         ),
       ]),
     );
