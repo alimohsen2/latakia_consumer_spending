@@ -59,7 +59,14 @@ class PageBody extends StatelessWidget {
 
   /// خلفية اختيارية للصفحة (تُستخدم للوحة الرئيسية الزيتية).
   final Color? background;
-  const PageBody({super.key, required this.children, this.background});
+
+  /// أقصى عرض للمحتوى؛ القيمة `double.infinity` تمدده لكامل الشاشة.
+  final double contentMaxWidth;
+  const PageBody(
+      {super.key,
+      required this.children,
+      this.background,
+      this.contentMaxWidth = 1240});
   @override
   Widget build(BuildContext context) {
     final l = <Widget>[];
@@ -71,7 +78,7 @@ class PageBody extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1240),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: l),
         ),

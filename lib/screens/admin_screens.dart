@@ -1551,7 +1551,9 @@ class PermissionsScreen extends StatelessWidget {
         0, (sum, r) => sum + (st.perms[r]?.length ?? 0));
     final dark = context.p.isDark;
 
-    return PageBody(children: [
+    return PageBody(
+      contentMaxWidth: double.infinity,
+      children: [
       PageHeader(
         'مصفوفة الصلاحيات',
         subtitle:
