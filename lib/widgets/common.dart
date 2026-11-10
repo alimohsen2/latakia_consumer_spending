@@ -42,7 +42,8 @@ class _AppCardState extends State<AppCard> {
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           transform: Matrix4.translationValues(0, lifted ? -4 : 0, 0)
-            ..scale(lifted ? 1.015 : 1.0),
+            ..multiply(Matrix4.diagonal3Values(
+                lifted ? 1.015 : 1.0, lifted ? 1.015 : 1.0, 1.0)),
           transformAlignment: Alignment.center,
           padding: widget.padding,
           decoration: ShapeDecoration(
