@@ -1050,6 +1050,7 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
       if (view == 'table' && list.isNotEmpty)
         GridTable(
+          onRowTap: (index) => context.go('/users/${list[index].id}/profile'),
           heads: const [
             '#',
             'أيقونة الدور',
@@ -3595,6 +3596,7 @@ class _UserCard extends StatelessWidget {
         kDivisions[user.division] ??
         user.division;
     return AppCard(
+      onTap: () => context.go('/users/${user.id}/profile'),
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

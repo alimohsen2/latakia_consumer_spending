@@ -7,32 +7,73 @@ import '../core/theme.dart';
 import '../data/store.dart';
 
 /// بطاقة بحواف مستمرة (squircle) وظل ناعم كما في تطبيقات أبل.
-class AppCard extends StatelessWidget {
+/// عند تمرير [onTap] تتحول لبطاقة تفاعلية: ظل بارز وحدود مميزة عند التحويم
+/// ومؤشر نقر، وتنفذ النقر عند الضغط.
+class AppCard extends StatefulWidget {
   final Widget child;
   final EdgeInsets padding;
+  final VoidCallback? onTap;
   const AppCard(
       {super.key,
       required this.child,
-      this.padding = const EdgeInsets.all(18)});
+      this.padding = const EdgeInsets.all(18),
+      this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: ShapeDecoration(
-          color: context.p.surface,
-          shape: ContinuousRectangleBorder(
+  State<AppCard> createState() => _AppCardState();
+}
+
+class _AppCardState extends State<AppCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final interactive = widget.onTap != null;
+    final lifted = interactive && _hover;
+    return MouseRegion(
+      onEnter:
+          interactive ? (_) => setState(() => _hover = true) : null,
+      onExit:
+          interactive ? (_) => setState(() => _hover = false) : null,
+      cursor: interactive ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: interactive ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, lifted ? -3 : 0, 0),
+          transformAlignment: Alignment.center,
+          padding: widget.padding,
+          decoration: ShapeDecoration(
+            color: context.p.surface,
+            shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              side: BorderSide(color: context.p.border, width: .5)),
-          shadows: [
-            BoxShadow(
-                color: context.p.isDark
-                    ? const Color(0x33000000)
-                    : const Color(0x0F000000),
-                blurRadius: 10,
-                offset: const Offset(0, 2))
-          ],
+              side: BorderSide(
+                color: lifted
+                    ? kPrimary2.withValues(alpha: .5)
+                    : context.p.border,
+                width: lifted ? 1.2 : .5,
+              ),
+            ),
+            shadows: [
+              BoxShadow(
+                color: lifted
+                    ? (context.p.isDark
+                        ? const Color(0x4D000000)
+                        : kPrimary2.withValues(alpha: .18))
+                    : (context.p.isDark
+                        ? const Color(0x33000000)
+                        : const Color(0x0F000000)),
+                blurRadius: lifted ? 24 : 10,
+                offset: lifted ? const Offset(0, 12) : const Offset(0, 2),
+              )
+            ],
+          ),
+          child: widget.child,
         ),
-        child: child,
-      );
+      ),
+    );
+  }
 }
 
 /// زر تبديل الوضع الفاتح/الداكن.
@@ -255,12 +296,17 @@ class GridTable extends StatelessWidget {
   final List<int>? flex;
   final String empty;
   final double? minWidth;
+
+  /// عند تمريرها تصبح الصفوف تفاعلية: تظليل عند التحويم والنقر هنا ينفذ
+  /// [onRowTap] مع رقم الصف.
+  final void Function(int index)? onRowTap;
   const GridTable(
       {super.key,
       required this.heads,
       required this.rows,
       this.flex,
       this.minWidth,
+      this.onRowTap,
       this.empty = 'لا توجد بيانات'});
   @override
   Widget build(BuildContext context) {
@@ -285,16 +331,19 @@ class GridTable extends StatelessWidget {
             padding: const EdgeInsets.all(32),
             child: Text(empty, style: TextStyle(color: context.p.muted))),
       for (var n = 0; n < rows.length; n++) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(children: [
-            for (var i = 0; i < rows[n].length; i++)
-              Expanded(
-                  flex: f[i],
-                  child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: rows[n][i]))
-          ]),
+        _HoverRow(
+          onTap: onRowTap == null ? null : () => onRowTap!(n),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(children: [
+              for (var i = 0; i < rows[n].length; i++)
+                Expanded(
+                    flex: f[i],
+                    child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: rows[n][i]))
+            ]),
+          ),
         ),
         if (n < rows.length - 1)
           const Padding(
@@ -311,6 +360,53 @@ class GridTable extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: SizedBox(width: minWidth, child: table),
             ),
+    );
+  }
+}
+
+/// صف جدول تفاعلي: يُظلَّل عند تحويم الفأرة، ومؤشر نقر، وينفذ [onTap].
+class _HoverRow extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _HoverRow({required this.child, this.onTap});
+  @override
+  State<_HoverRow> createState() => _HoverRowState();
+}
+
+class _HoverRowState extends State<_HoverRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    return MouseRegion(
+      onEnter: enabled ? (_) => setState(() => _hover = true) : null,
+      onExit: enabled ? (_) => setState(() => _hover = false) : null,
+      cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
+          
+          decoration: BoxDecoration(
+            color: enabled && _hover
+                ? context.p.surfaceAlt
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: enabled && _hover
+                  ? kPrimary2.withValues(alpha: .35)
+                  : Colors.transparent,
+            ),
+          ),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
