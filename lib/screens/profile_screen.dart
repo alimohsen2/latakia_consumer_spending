@@ -311,18 +311,6 @@ class _HeroCard extends StatelessWidget {
               end: -72,
               child: _glow(kPrimary2.withValues(alpha: .35), 280),
             ),
-            PositionedDirectional(
-              bottom: -26,
-              start: 54,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: .10), width: 1.4),
-                ),
-                child: const SizedBox(width: 54, height: 54),
-              ),
-            ),
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(28, 24, 28, 22),
               child: Column(
@@ -472,7 +460,7 @@ class _HeroCard extends StatelessWidget {
                     children: [
                       _GlassPill(
                         icon: CupertinoIcons.doc_text,
-                        label: 'المحاضر المنشأة',
+                        label: 'محاضري',
                         value: '$reportsCount',
                       ),
                       _GlassPill(
@@ -701,7 +689,7 @@ class _ProfileStatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = context.p.isDark;
     final stats = <_Stat>[
-      _Stat('المحاضر المنشأة', '$reportsCount', CupertinoIcons.doc_text, kPrimary2),
+      _Stat('محاضري', '$reportsCount', CupertinoIcons.doc_text, kPrimary2),
       _Stat('قيد الإنجاز', '$inProgress', CupertinoIcons.clock_fill, kGold,
           warn: inProgress > 0),
       _Stat('معتمدة أو مقفلة', '$completed', CupertinoIcons.checkmark_seal_fill,
