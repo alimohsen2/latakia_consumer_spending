@@ -48,6 +48,8 @@ const _items = [
       'reports.center', 'التقارير', Color(0xFF9EC5FF)),
   _Nav('/users', 'المستخدمون', CupertinoIcons.person_2, 'users.manage',
       'المستخدمون والصلاحيات', Color(0xFFD6C2FF)),
+  _Nav('/users/new', 'إنشاء حساب', CupertinoIcons.person_add, 'users.manage',
+      'المستخدمون والصلاحيات', Color(0xFF9EC5FF)),
   _Nav(
       '/active-users',
       'المستخدمون الفعّالون حاليًا',

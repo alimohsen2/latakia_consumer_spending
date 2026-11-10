@@ -219,7 +219,7 @@ void main() {
 
     GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/users');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('إنشاء حساب'));
+    await tester.tap(find.widgetWithText(FilledButton, 'إنشاء حساب'));
     await tester.pumpAndSettle();
 
     expect(find.text('اختيار صورة شخصية'), findsOneWidget);
@@ -236,17 +236,23 @@ void main() {
     addTearDown(tester.view.reset);
 
     final st = await makeStore();
+    // تعطيل حساب رئيس قسم المعلوماتية الحالي لجعل الدور متاحاً للإنشاء
+    st.users.firstWhere((u) => u.id == 'u11').active = false;
     await tester.pumpWidget(App(store: st));
     await tester.pumpAndSettle();
 
     GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/users');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('إنشاء حساب'));
+    await tester.tap(find.widgetWithText(FilledButton, 'إنشاء حساب'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('موظف').last);
+    await tester.tap(find.byType(DropdownButton<String>).first);
     await tester.pumpAndSettle();
 
     expect(find.text('رئيس قسم المعلوماتية'), findsWidgets);
+    // اختيار الدور يعيّن مدير المالية كمسؤول مباشر تلقائياً
+    await tester.tap(find.text('رئيس قسم المعلوماتية').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('مدير المالية'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 

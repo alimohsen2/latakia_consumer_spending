@@ -140,6 +140,8 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 path: '/users/:id/profile',
                 builder: (c, s) =>
                     ProfileScreen(userId: s.pathParameters['id']!)),
+            GoRoute(path: '/users/new',
+                builder: (c, s) => const CreateAccountScreen()),
             GoRoute(path: '/users', builder: (c, s) => const UsersScreen()),
             GoRoute(
                 path: '/active-users',

@@ -785,266 +785,6 @@ class _UsersScreenState extends State<UsersScreen> {
     }
   }
 
-  Future<void> _add(AppStore st) async {
-    final name = TextEditingController(),
-        phone = TextEditingController(),
-        un = TextEditingController(),
-        pw = TextEditingController();
-    PickedUserPhoto? selectedPhoto;
-    final requiredAccount = st.nextRequiredLeadershipAccount;
-    var r = requiredAccount?.role ?? 'user',
-        d = requiredAccount?.division ?? 'field',
-        mgr = '';
-    String? err;
-    bool roleAvailable(String role, String division) => !st.users.any(
-          (user) =>
-              user.active &&
-              user.role == role &&
-              (!isDivisionHeadRole(role) || user.division == division),
-        );
-    String? managerRole(String role, String division) => switch (role) {
-          'sectionHead' || 'infoSectionHead' => 'financeDirector',
-          'deptHead' => 'sectionHead',
-          'fieldHead' || 'officeHead' || 'archiveHead' => 'deptHead',
-          'monitor' || 'user' => headRoleForDivision(division),
-          _ => null,
-        };
-    List<AppUser> managersFor(String role, String division) {
-      final expectedRole = managerRole(role, division);
-      if (expectedRole == null) return [];
-      return st.users
-          .where((user) =>
-              user.active &&
-              user.role == expectedRole &&
-              (!isDivisionHeadRole(expectedRole) || user.division == division))
-          .toList();
-    }
-
-    List<String> rolesForDivision(String division) {
-      if (requiredAccount != null) {
-        return division == requiredAccount.division
-            ? [requiredAccount.role]
-            : [];
-      }
-      if (division.isEmpty) {
-        return [
-          if (roleAvailable('financeDirector', '')) 'financeDirector',
-          if (roleAvailable('sectionHead', '') &&
-              managersFor('sectionHead', '').isNotEmpty)
-            'sectionHead',
-          if (roleAvailable('infoSectionHead', '') &&
-              managersFor('infoSectionHead', '').isNotEmpty)
-            'infoSectionHead',
-          if (roleAvailable('deptHead', '') &&
-              managersFor('deptHead', '').isNotEmpty)
-            'deptHead',
-          'sysadmin',
-        ];
-      }
-      return [
-        if (roleAvailable('financeDirector', '')) 'financeDirector',
-        if (roleAvailable('sectionHead', '') &&
-            managersFor('sectionHead', '').isNotEmpty)
-          'sectionHead',
-        if (roleAvailable('infoSectionHead', '') &&
-            managersFor('infoSectionHead', '').isNotEmpty)
-          'infoSectionHead',
-        if (roleAvailable('deptHead', '') &&
-            managersFor('deptHead', '').isNotEmpty)
-          'deptHead',
-        if (roleAvailable(headRoleForDivision(division)!, division) &&
-            managersFor(headRoleForDivision(division)!, division).isNotEmpty)
-          headRoleForDivision(division)!,
-        if (division == 'field' && managersFor('monitor', division).isNotEmpty)
-          'monitor',
-        'user',
-        'sysadmin',
-      ];
-    }
-
-    void chooseDefaultManager() {
-      final candidates = managersFor(r, d);
-      mgr = candidates.length == 1 ? candidates.first.id : '';
-    }
-
-    String managerLabel(AppUser manager) {
-      return '${manager.name} (${kRoles[manager.role]})';
-    }
-
-    Widget directManagerField() {
-      final candidates = managersFor(r, d);
-      final value = candidates.length == 1
-          ? managerLabel(candidates.first)
-          : 'لا يوجد رئيس شعبة مفعّل لهذه الشعبة';
-      return Expanded(
-        child: InputDecorator(
-          decoration: const InputDecoration(
-            labelText: 'المسؤول المباشر',
-            enabled: false,
-          ),
-          child: Text(value),
-        ),
-      );
-    }
-
-    chooseDefaultManager();
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, set) => AlertDialog(
-          title: const Text('إنشاء حساب'),
-          content: SizedBox(
-            width: 520,
-            child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                _UserPhotoPicker(
-                  store: st,
-                  onChanged: (photo) => set(() => selectedPhoto = photo),
-                ),
-                const SizedBox(height: 10),
-                rowOf([
-                  Field('الاسم الكامل', ctl: name),
-                  Field('رقم الموبايل', ctl: phone, type: TextInputType.phone),
-                ]),
-                const SizedBox(height: 10),
-                rowOf([
-                  Field('اسم المستخدم', ctl: un),
-                ]),
-                const SizedBox(height: 10),
-                rowOf([Field('كلمة مرور مؤقتة (6 أحرف على الأقل)', ctl: pw)]),
-                const SizedBox(height: 10),
-                if (requiredAccount != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      'أكمل إنشاء الحسابات الإدارية بالترتيب قبل إضافة الموظفين والمراقبين.',
-                      style: TextStyle(color: context.p.muted),
-                    ),
-                  ),
-                rowOf([
-                  Drop(
-                    'الدور',
-                    r,
-                    {
-                    for (final role in rolesForDivision(d)) role: kRoles[role]!,
-                    },
-                    (v) => set(() {
-                      r = v;
-                      if (isDivisionHeadRole(v)) {
-                        d = divisionForHeadRole(v)!;
-                      } else if (!['monitor', 'user'].contains(v)) {
-                        d = '';
-                    } else if (d.isEmpty || (v == 'monitor' && d != 'field')) {
-                        d = 'field';
-                      }
-                      chooseDefaultManager();
-                    }),
-                  ),
-                if (requiredAccount == null && ['monitor', 'user'].contains(r))
-                    Drop(
-                      'الشعبة',
-                      d,
-                      kDivisionNames,
-                      (v) => set(() {
-                        d = v;
-                        if (!rolesForDivision(d).contains(r)) {
-                          r = d.isEmpty
-                              ? rolesForDivision(d).first
-                              : (rolesForDivision(d).contains('user')
-                                  ? 'user'
-                                  : rolesForDivision(d).first);
-                        }
-                        chooseDefaultManager();
-                      }),
-                      enabled: ['monitor', 'user'].contains(r),
-                    ),
-                ]),
-                if (managerRole(r, d) != null) ...[
-                  const SizedBox(height: 10),
-                  rowOf([
-                    if (['monitor', 'user'].contains(r))
-                      directManagerField()
-                    else
-                      Drop(
-                        'المسؤول المباشر',
-                        mgr,
-                        {
-                        if (managersFor(r, d).isEmpty) '': 'لا يوجد مسؤول متاح',
-                          for (final u in managersFor(r, d))
-                            u.id: '${u.name} (${kRoles[u.role]})',
-                        },
-                        (v) => set(() => mgr = v),
-                      ),
-                  ]),
-                ],
-                if (err != null)
-                  Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(err!, style: const TextStyle(color: kRed))),
-              ]),
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء')),
-            FilledButton(
-              onPressed: () async {
-                if (name.text.trim().isEmpty ||
-                    un.text.trim().isEmpty ||
-                    pw.text.length < 6) {
-                  set(() => err = 'أكمل الحقول. كلمة المرور 6 أحرف على الأقل');
-                  return;
-                }
-                if (managerRole(r, d) != null && mgr.isEmpty) {
-                  set(() =>
-                      err = 'لا يوجد مسؤول مباشر مناسب لهذا الدور والشعبة');
-                  return;
-                }
-                final account = AppUser(
-                  id: newId(),
-                  name: name.text.trim(),
-                  phone: phone.text.trim(),
-                  username: un.text.trim(),
-                  passHash: '',
-                  role: r,
-                  division: d,
-                  managerId: mgr,
-                );
-                final e = st.addUser(account, pw.text);
-                if (e != null) {
-                  set(() => err = e);
-                } else {
-                  if (selectedPhoto != null) {
-                    try {
-                      final photoError = await st.setUserPhoto(
-                        account.id,
-                        name: selectedPhoto!.name,
-                        mime: selectedPhoto!.mime,
-                        bytes: selectedPhoto!.bytes,
-                      );
-                      if (photoError != null && ctx.mounted) {
-                        toast(ctx, 'تم إنشاء الحساب لكن تعذر حفظ الصورة: $photoError');
-                      }
-                    } catch (error) {
-                      if (ctx.mounted) {
-                        toast(ctx, 'تم إنشاء الحساب لكن تعذر حفظ الصورة: $error');
-                      }
-                    }
-                  }
-                  if (!ctx.mounted) return;
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('إنشاء'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _managerNameOf(AppUser user) {
     for (final candidate in context.read<AppStore>().users) {
       if (candidate.id == user.managerId) {
@@ -1079,7 +819,7 @@ class _UsersScreenState extends State<UsersScreen> {
               'الفريق بالكامل في مكان واحد — عرض وإنشاء وتعديل وإغلاق الحسابات',
           actions: [
             FilledButton.icon(
-              onPressed: () => _add(st),
+              onPressed: () => context.go('/users/new'),
               icon: const Icon(CupertinoIcons.person_add, size: 18),
               label: const Text('إنشاء حساب'),
             ),
@@ -2998,4 +2738,575 @@ class _IconDropdown extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// شاشة إنشاء حساب جديد — تصميم أفخم: رأس ترقية، صورة المستخدم، حقول مصقولة.
+class CreateAccountScreen extends StatefulWidget {
+  const CreateAccountScreen({super.key});
+
+  @override
+  State<CreateAccountScreen> createState() => _CreateAccountScreenState();
+}
+
+class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  final name = TextEditingController();
+  final phone = TextEditingController();
+  final un = TextEditingController();
+  final pw = TextEditingController();
+  PickedUserPhoto? selectedPhoto;
+  String? err;
+  late String role;
+  late String division;
+  late String managerId;
+
+  @override
+  void initState() {
+    super.initState();
+    final store = context.read<AppStore>();
+    final required = store.nextRequiredLeadershipAccount;
+    role = required?.role ?? 'user';
+    division = required?.division ?? 'field';
+    final candidates = _managersFor(role, division);
+    managerId = candidates.length == 1 ? candidates.first.id : '';
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    phone.dispose();
+    un.dispose();
+    pw.dispose();
+    super.dispose();
+  }
+
+  bool _roleAvailable(String role, String division) {
+    final store = context.read<AppStore>();
+    return !store.users.any((user) =>
+        user.active &&
+        user.role == role &&
+        (!isDivisionHeadRole(role) || user.division == division));
+  }
+
+  String? _managerRoleFor(String role, String division) => switch (role) {
+        'sectionHead' || 'infoSectionHead' => 'financeDirector',
+        'deptHead' => 'sectionHead',
+        'fieldHead' || 'officeHead' || 'archiveHead' => 'deptHead',
+        'monitor' || 'user' => headRoleForDivision(division),
+        _ => null,
+      };
+
+  List<AppUser> _managersFor(String role, String division) {
+    final expectedRole = _managerRoleFor(role, division);
+    if (expectedRole == null) return [];
+    final store = context.read<AppStore>();
+    return store.users
+        .where((user) =>
+            user.active &&
+            user.role == expectedRole &&
+            (!isDivisionHeadRole(expectedRole) || user.division == division))
+        .toList();
+  }
+
+  List<String> _rolesFor(String division) {
+    final store = context.read<AppStore>();
+    final required = store.nextRequiredLeadershipAccount;
+    if (required != null) {
+      return division == required.division ? [required.role] : [];
+    }
+    if (division.isEmpty) {
+      return [
+        if (_roleAvailable('financeDirector', '')) 'financeDirector',
+        if (_roleAvailable('sectionHead', '') &&
+            _managersFor('sectionHead', '').isNotEmpty)
+          'sectionHead',
+        if (_roleAvailable('infoSectionHead', '') &&
+            _managersFor('infoSectionHead', '').isNotEmpty)
+          'infoSectionHead',
+        if (_roleAvailable('deptHead', '') &&
+            _managersFor('deptHead', '').isNotEmpty)
+          'deptHead',
+        'sysadmin',
+      ];
+    }
+    return [
+      if (_roleAvailable('financeDirector', '')) 'financeDirector',
+      if (_roleAvailable('sectionHead', '') &&
+          _managersFor('sectionHead', '').isNotEmpty)
+        'sectionHead',
+      if (_roleAvailable('infoSectionHead', '') &&
+          _managersFor('infoSectionHead', '').isNotEmpty)
+        'infoSectionHead',
+      if (_roleAvailable('deptHead', '') &&
+          _managersFor('deptHead', '').isNotEmpty)
+        'deptHead',
+      if (roleAvailableSafe(headRoleForDivision(division), division) &&
+          _managersFor(headRoleForDivision(division) ?? '', division)
+              .isNotEmpty)
+        headRoleForDivision(division)!,
+      if (division == 'field' &&
+          _managersFor('monitor', division).isNotEmpty)
+        'monitor',
+      'user',
+      'sysadmin',
+    ];
+  }
+
+  bool roleAvailableSafe(String? role, String division) {
+    if (role == null) return false;
+    return _roleAvailable(role, division);
+  }
+
+  void _chooseDefaultManager() {
+    final candidates = _managersFor(role, division);
+    final id = candidates.length == 1 ? candidates.first.id : '';
+    setState(() => managerId = id);
+  }
+
+  String _managerLabel(AppUser manager) =>
+      '${manager.name} (${kRoles[manager.role]})';
+
+  Future<void> _create(BuildContext context, AppStore store) async {
+    if (name.text.trim().isEmpty ||
+        un.text.trim().isEmpty ||
+        pw.text.length < 6) {
+      setState(() => err = 'أكمل الحقول. كلمة المرور 6 أحرف على الأقل');
+      return;
+    }
+    if (_managerRoleFor(role, division) != null && managerId.isEmpty) {
+      setState(() => err = 'لا يوجد مسؤول مباشر مناسب لهذا الدور والشعبة');
+      return;
+    }
+    final account = AppUser(
+      id: newId(),
+      name: name.text.trim(),
+      phone: phone.text.trim(),
+      username: un.text.trim(),
+      passHash: '',
+      role: role,
+      division: division,
+      managerId: managerId,
+    );
+    final e = store.addUser(account, pw.text);
+    if (e != null) {
+      setState(() => err = e);
+      return;
+    }
+    if (selectedPhoto != null) {
+      try {
+        final photoError = await store.setUserPhoto(
+          account.id,
+          name: selectedPhoto!.name,
+          mime: selectedPhoto!.mime,
+          bytes: selectedPhoto!.bytes,
+        );
+        if (photoError != null && context.mounted) {
+          toast(context, 'تم إنشاء الحساب لكن تعذر حفظ الصورة: $photoError');
+        }
+      } catch (error) {
+        if (context.mounted) {
+          toast(context, 'تم إنشاء الحساب لكن تعذر حفظ الصورة: $error');
+        }
+      }
+    }
+    if (!context.mounted) return;
+    toast(context, 'تم إنشاء الحساب بنجاح');
+    context.go('/users');
+  }
+
+  Widget _glow(Color color, double size) => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+        child: SizedBox(width: size, height: size),
+      );
+
+  Widget _hero(BuildContext context, ({String role, String division})? required) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            Color(0xFF1D6054),
+            Color(0xFF17574E),
+            Color(0xFF0E3A34),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withValues(alpha: .16)),
+        boxShadow: [
+          BoxShadow(
+            color: kPrimary.withValues(alpha: .35),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(children: [
+          PositionedDirectional(
+            top: -84,
+            start: -64,
+            child: _glow(kGold.withValues(alpha: .28), 240),
+          ),
+          PositionedDirectional(
+            bottom: -110,
+            end: -72,
+            child: _glow(kPrimary2.withValues(alpha: .35), 280),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(26, 22, 26, 22),
+            child: Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: AlignmentDirectional.topStart,
+                      end: AlignmentDirectional.bottomEnd,
+                      colors: [Color(0xFFA98545), Color(0xFF7C5A1E)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: .35)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kGold.withValues(alpha: .4),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(CupertinoIcons.person_add,
+                      size: 30, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'إنشاء حساب جديد',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'أضف حسابات الفريق بأدوارهم وشعبهم ومسؤوليهم المباشرين',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: .78),
+                          fontSize: 12.5,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (required != null) ...[
+                        const SizedBox(height: 12),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: kGold.withValues(alpha: .2),
+                            borderRadius: BorderRadius.circular(10),
+                            border:
+                                Border.all(color: kGold.withValues(alpha: .45)),
+                          ),
+                          child: const Padding(
+                            padding:
+                                EdgeInsetsDirectional.fromSTEB(12, 7, 12, 7),
+                            child: Text(
+                              'أكمل إنشاء الحسابات الإدارية بالترتيب قبل إضافة الموظفين والمراقبين.',
+                              style: TextStyle(
+                                color: Color(0xFFE9CEA8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<AppStore>();
+    final required = store.nextRequiredLeadershipAccount;
+    return PageBody(children: [
+      BackBreadcrumb(
+        parent: 'المستخدمون',
+        current: 'إنشاء حساب',
+        fallbackLocation: '/users',
+      ),
+      _hero(context, required),
+      AppCard(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 820;
+          final accountSection = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _FormSectionHeader(
+                icon: CupertinoIcons.person_crop_rectangle,
+                title: 'بيانات الحساب',
+                subtitle: 'الصورة والاسم واسم المستخدم وكلمة المرور المؤقتة',
+                accent: kPrimary2,
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: _UserPhotoPicker(
+                  store: store,
+                  onChanged: (photo) =>
+                      setState(() => selectedPhoto = photo),
+                ),
+              ),
+              const SizedBox(height: 16),
+              rowOf([
+                Field('الاسم الكامل', ctl: name),
+                Field('رقم الموبايل', ctl: phone, type: TextInputType.phone),
+              ]),
+              const SizedBox(height: 12),
+              rowOf([Field('اسم المستخدم', ctl: un)]),
+              const SizedBox(height: 12),
+              rowOf([
+                Field('كلمة مرور مؤقتة (6 أحرف على الأقل)', ctl: pw),
+              ]),
+              if (err != null) ...[
+                const SizedBox(height: 14),
+                _errorBox(err!),
+              ],
+            ],
+          );
+          final accessSection = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _FormSectionHeader(
+                icon: CupertinoIcons.lock_shield_fill,
+                title: 'الوصول والمسؤول',
+                subtitle: 'الدور والشعبة والمسؤول المباشر',
+                accent: kGold,
+              ),
+              const SizedBox(height: 16),
+              rowOf([
+                Drop(
+                  'الدور',
+                  role,
+                  {
+                    for (final r in _rolesFor(division)) r: kRoles[r]!,
+                  },
+                  (v) => setState(() {
+                    role = v;
+                    if (isDivisionHeadRole(v)) {
+                      division = divisionForHeadRole(v)!;
+                    } else if (!['monitor', 'user'].contains(v)) {
+                      division = '';
+                    } else if (division.isEmpty || (v == 'monitor' && division != 'field')) {
+                      division = 'field';
+                    }
+                    _chooseDefaultManager();
+                  }),
+                ),
+              ]),
+              if (required == null && ['monitor', 'user'].contains(role)) ...[
+                const SizedBox(height: 12),
+                rowOf([
+                  Drop(
+                    'الشعبة',
+                    division,
+                    kDivisionNames,
+                    (v) => setState(() {
+                      division = v;
+                      if (!_rolesFor(division).contains(role)) {
+                        role = division.isEmpty
+                            ? _rolesFor(division).first
+                            : (_rolesFor(division).contains('user')
+                                ? 'user'
+                                : _rolesFor(division).first);
+                      }
+                      _chooseDefaultManager();
+                    }),
+                    enabled: ['monitor', 'user'].contains(role),
+                  ),
+                ]),
+              ],
+              if (_managerRoleFor(role, division) != null) ...[
+                const SizedBox(height: 12),
+                if (['monitor', 'user'].contains(role))
+                  rowOf([
+                    Expanded(
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'المسؤول المباشر',
+                          enabled: false,
+                        ),
+                        child: Text(_directManagerValue()),
+                      ),
+                    ),
+                  ])
+                else
+                  rowOf([
+                    Drop(
+                      'المسؤول المباشر',
+                      managerId,
+                      {
+                        if (_managersFor(role, division).isEmpty)
+                          '': 'لا يوجد مسؤول متاح',
+                        for (final u in _managersFor(role, division))
+                          u.id: '${u.name} (${kRoles[u.role]})',
+                      },
+                      (v) => setState(() => managerId = v),
+                    ),
+                  ]),
+              ],
+            ],
+          );
+          if (!wide) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                accountSection,
+                const SizedBox(height: 18),
+                accessSection,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 7, child: accountSection),
+              const SizedBox(width: 22),
+              Expanded(flex: 5, child: accessSection),
+            ],
+          );
+        }),
+      ),
+      AppCard(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(CupertinoIcons.chevron_right, size: 17),
+              label: const Text('إلغاء'),
+            ),
+            FilledButton.icon(
+              onPressed: () => _create(context, store),
+              icon: const Icon(CupertinoIcons.person_add, size: 18),
+              label: const Text('إنشاء الحساب'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  String _directManagerValue() {
+    final candidates = _managersFor(role, division);
+    return candidates.length == 1
+        ? _managerLabel(candidates.first)
+        : 'لا يوجد رئيس شعبة مفعّل لهذه الشعبة';
+  }
+
+  Widget _errorBox(String message) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: kRed.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kRed.withValues(alpha: .25)),
+        ),
+        child: Row(children: [
+          const Icon(CupertinoIcons.exclamationmark_circle_fill,
+              color: kRed, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: kRed,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ]),
+      );
+}
+
+/// عنوان قسم داخل نموذج إنشاء الحساب.
+class _FormSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  const _FormSectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.accent = kPrimary2,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [
+                accent.withValues(alpha: .28),
+                accent.withValues(alpha: .10),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 21, color: accent),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: context.p.muted,
+                  fontSize: 11.5,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ]);
 }
