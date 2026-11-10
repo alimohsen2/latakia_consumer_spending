@@ -80,6 +80,7 @@ class ProfileScreen extends StatelessWidget {
         store: st,
         user: user,
         isSelf: isSelf,
+        canManageUsers: canManageUsers,
         reportsCount: reports.length,
         inProgress: inProgress,
         completed: completed,
@@ -291,6 +292,7 @@ class _HeroCard extends StatelessWidget {
   final AppStore store;
   final AppUser user;
   final bool isSelf;
+  final bool canManageUsers;
   final int reportsCount, inProgress, completed;
   final num fines;
 
@@ -298,6 +300,7 @@ class _HeroCard extends StatelessWidget {
     required this.store,
     required this.user,
     required this.isSelf,
+    required this.canManageUsers,
     required this.reportsCount,
     required this.inProgress,
     required this.completed,
@@ -367,25 +370,52 @@ class _HeroCard extends StatelessWidget {
                           letterSpacing: .4,
                         ),
                       ),
-                      if (isSelf)
-                        FilledButton.icon(
-                          onPressed: () => context.go('/change-password'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: .16),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                                14, 10, 14, 10),
-                            shape: const RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(12))),
-                          ),
-                          icon: const Icon(CupertinoIcons.lock_rotation,
-                              size: 17),
-                          label: const Text(
-                            'تغيير كلمة المرور',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (canManageUsers)
+                            FilledButton.icon(
+                              onPressed: () => context
+                                  .go('/users/${user.id}/activity'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: .16),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                    14, 10, 14, 10),
+                                shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(
+                                        Radius.circular(12))),
+                              ),
+                              icon: const Icon(CupertinoIcons.time, size: 17),
+                              label: const Text(
+                                'سجل نشاطه',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          if (isSelf)
+                            FilledButton.icon(
+                              onPressed: () => context.go('/change-password'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: .16),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                    14, 10, 14, 10),
+                                shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(
+                                        Radius.circular(12))),
+                              ),
+                              icon: const Icon(CupertinoIcons.lock_rotation,
+                                  size: 17),
+                              label: const Text(
+                                'تغيير كلمة المرور',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 18),

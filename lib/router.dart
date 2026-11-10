@@ -30,6 +30,9 @@ const _guards = [
   ['/archive', 'archive.view'],
   ['/field/monitor', 'field.view'],
   ['/users', 'users.manage'],
+  ['/users/new', 'users.manage'],
+  ['/users/:id/activity', 'users.manage'],
+  ['/users/:id/profile', 'users.manage'],
   ['/active-users', 'users.manage'],
   ['/permissions', 'permissions.manage'],
   ['/routing', 'alerts.route'],
@@ -140,6 +143,10 @@ GoRouter buildRouter(AppStore store) => GoRouter(
                 path: '/users/:id/profile',
                 builder: (c, s) =>
                     ProfileScreen(userId: s.pathParameters['id']!)),
+            GoRoute(
+                path: '/users/:id/activity',
+                builder: (c, s) =>
+                    AuditScreen(userId: s.pathParameters['id']!)),
             GoRoute(path: '/users/new',
                 builder: (c, s) => const CreateAccountScreen()),
             GoRoute(path: '/users', builder: (c, s) => const UsersScreen()),

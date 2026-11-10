@@ -774,6 +774,25 @@ class _UsersScreenState extends State<UsersScreen> {
             child: const Text('إغلاق',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/users/${user.id}/activity');
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: kPrimary,
+              padding:
+                  const EdgeInsetsDirectional.fromSTEB(18, 14, 18, 14),
+              shape: const StadiumBorder(),
+              side: BorderSide(
+                  color: kPrimary.withValues(alpha: .35), width: 1),
+            ),
+            icon: const Icon(CupertinoIcons.time, size: 18),
+            label: const Text(
+              'سجل نشاطه',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(context);
@@ -2015,7 +2034,8 @@ class SerialsScreen extends StatelessWidget {
 }
 
 class AuditScreen extends StatefulWidget {
-  const AuditScreen({super.key});
+  final String? userId;
+  const AuditScreen({super.key, this.userId});
   @override
   State<AuditScreen> createState() => _AuditScreenState();
 }
@@ -2085,24 +2105,40 @@ class _AuditScreenState extends State<AuditScreen> {
     return (CupertinoIcons.info, kPrimary2);
   }
 
+  AppUser? _findUser(AppStore store, String id) {
+    for (final u in store.users) {
+      if (u.id == id) return u;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final st = context.watch<AppStore>();
     final nq = normAr(q.text);
-    final users = {
-      for (final user in st.users)
-        if (user.name.trim().isNotEmpty) user.name.trim(),
-      for (final entry in st.audit)
-        if (entry.user.trim().isNotEmpty) entry.user.trim(),
-    }.toList()
-      ..sort();
-    final userOptions = {
-      '': 'كل المستخدمين',
-      for (final user in users) user: user,
-    };
+    final scopedUser =
+        widget.userId == null ? null : _findUser(st, widget.userId!);
+    final scopedName = scopedUser?.name;
+    final scopedMode = scopedName != null;
+    final users = scopedMode
+        ? [scopedName]
+        : {
+            for (final user in st.users)
+              if (user.name.trim().isNotEmpty) user.name.trim(),
+            for (final entry in st.audit)
+              if (entry.user.trim().isNotEmpty) entry.user.trim(),
+          }.toList()
+          ..sort();
+    final userOptions = scopedMode
+        ? {scopedName: scopedName}
+        : {
+            '': 'كل المستخدمين',
+            for (final user in users) user: user,
+          };
+    final effectiveFilter = scopedMode ? scopedName : userFilter;
     final list = st.audit.reversed
         .where((e) =>
-            (userFilter.isEmpty || e.user == userFilter) &&
+            (effectiveFilter.isEmpty || e.user == effectiveFilter) &&
             (nq.isEmpty ||
                 normAr('${e.user} ${e.action} ${e.entity} ${e.detail}')
                     .contains(nq)))
@@ -2110,16 +2146,24 @@ class _AuditScreenState extends State<AuditScreen> {
     final uniqueActions = <String>{};
     final uniqueUsers = <String>{};
     for (final e in st.audit) {
+      if (widget.userId != null && e.user != scopedName) continue;
       uniqueActions.add(e.action);
       uniqueUsers.add(e.user);
     }
 
     return PageBody(children: [
+      if (scopedMode)
+        BackBreadcrumb(
+          parent: 'الملف الشخصي',
+          current: 'سجل نشاطه',
+          fallbackLocation: '/users/${widget.userId}/profile',
+        ),
       PageHeader(
-        'سجل العمليات',
-        subtitle:
-            'منفذ العملية هو المستخدم الذي أجراها، والعنصر المتأثر هو السجل الذي عُدّل. '
-            'التفاصيل تعرض معلومات إضافية. السجل للقراءة فقط ومترابط ببصمات تكشف التعديل أو الحذف.',
+        scopedMode ? 'سجل عمليات $scopedName' : 'سجل العمليات',
+        subtitle: scopedMode
+            ? 'كل ما فعله هذا المستخدم في النظام — من تعديل وإضافة وفتح وتصدير'
+            : 'منفذ العملية هو المستخدم الذي أجراها، والعنصر المتأثر هو السجل الذي عُدّل. '
+                'التفاصيل تعرض معلومات إضافية. السجل للقراءة فقط ومترابط ببصمات تكشف التعديل أو الحذف.',
         actions: [
           OutlinedButton.icon(
             onPressed: () => context.go('/integrity'),
@@ -2275,13 +2319,18 @@ class _AuditScreenState extends State<AuditScreen> {
                 Expanded(
                   child: _IconDropdown(
                     icon: CupertinoIcons.person_crop_circle,
-                    label: 'عرض عمليات المستخدم',
-                    value: userFilter,
+                    label: scopedMode
+                        ? 'المستخدم: $scopedName'
+                        : 'عرض عمليات المستخدم',
+                    value: scopedMode ? scopedName : userFilter,
                     options: userOptions,
-                    onChanged: (v) => setState(() => userFilter = v),
+                    onChanged: (v) {
+                      if (scopedMode) return;
+                      setState(() => userFilter = v);
+                    },
                   ),
                 ),
-                if (userFilter.isNotEmpty || q.text.isNotEmpty) ...[
+                if (!scopedMode && (userFilter.isNotEmpty || q.text.isNotEmpty)) ...[
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: () {
