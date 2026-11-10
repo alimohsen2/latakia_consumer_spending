@@ -413,16 +413,6 @@ class _HoverRowState extends State<_HoverRow> {
                   : kGold.withValues(alpha: 0),
               width: 1.6,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: active
-                    ? kGold.withValues(
-                        alpha: context.p.isDark ? .30 : .38)
-                    : Colors.transparent,
-                blurRadius: active ? 24 : 0,
-                offset: active ? const Offset(0, 10) : Offset.zero,
-              ),
-            ],
           ),
           child: widget.child,
         ),
