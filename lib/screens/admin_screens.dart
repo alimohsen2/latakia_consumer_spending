@@ -2095,105 +2095,545 @@ class _RoleHeaderCell extends StatelessWidget {
   }
 }
 
+/// توزيع التنبيهات — من يصله كل تنبيه. مدير النظام يستلم دائماً.
 class RoutingScreen extends StatelessWidget {
   const RoutingScreen({super.key});
 
-  Future<void> _users(BuildContext context, AppStore st, String type) =>
+  static const _roleCols = <String, (IconData, String, Color)>{
+    'role:sectionHead':
+        (CupertinoIcons.person_2_fill, 'رئيس قسم الواردات', kPrimary2),
+    'role:deptHead': (CupertinoIcons.person_2_fill, 'رئيس الدائرة', kGold),
+    'role:fieldHead': (CupertinoIcons.person_2_fill, 'الشعبة الميدانية', Color(0xFF7FB8FF)),
+    'role:officeHead':
+        (CupertinoIcons.person_2_fill, 'الشعبة المكتبية', Color(0xFF9FE3C0)),
+    'role:archiveHead':
+        (CupertinoIcons.person_2_fill, 'شعبة الأرشيف', Color(0xFFD6C2FF)),
+  };
+  static const _divCols = <String, (String, Color)>{
+    'div:field': ('الميدانية', Color(0xFF7FB8FF)),
+    'div:office': ('المكتبية', Color(0xFF9FE3C0)),
+    'div:archive': ('الأرشيف', Color(0xFFFFD27A)),
+  };
+
+  Future<void> _users(BuildContext context, String type) =>
       showDialog<void>(
         context: context,
-        builder: (ctx) => Consumer<AppStore>(
-          builder: (ctx, s, _) => AlertDialog(
-            title: Text('مستخدمون محددون: ${kAlertTypes[type]}'),
-            content: SizedBox(
-                width: 420,
-                height: 360,
-                child: ListView(children: [
-                  for (final u in s.users)
-                    CheckboxListTile(
-                        value: (s.routing[type] ?? []).contains('user:${u.id}'),
-                        onChanged: (_) => s.toggleRoute(type, 'user:${u.id}'),
-                        title: Text(u.name),
-                        subtitle: Text(kRoles[u.role] ?? ''))
-                ])),
-            actions: [
-              FilledButton(
-                  onPressed: () => Navigator.pop(ctx), child: const Text('تم'))
-            ],
-          ),
-        ),
+        builder: (ctx) => _AlertUsersDialog(type: type),
       );
+
+  Color _alertColor(String key) {
+    if (key.contains('critical') || key.contains('security')) return kRed;
+    if (key.contains('high')) return const Color(0xFFFF9F0A);
+    if (key.contains('medium')) return kGold;
+    if (key.contains('late')) return const Color(0xFF7FB8FF);
+    if (key.contains('cancelled')) return const Color(0xFF9FE3C0);
+    if (key.contains('gap')) return const Color(0xFFD6C2FF);
+    if (key.contains('objection')) return const Color(0xFFFFA99B);
+    return kPrimary2;
+  }
 
   @override
   Widget build(BuildContext context) {
     final st = context.watch<AppStore>();
-    const cols = {
-      'role:sectionHead': 'رئيس قسم الواردات',
-      'role:deptHead': 'رئيس دائرة الإنفاق الإستهلاكي',
-      'role:fieldHead': 'رئيس الشعبة الميدانية',
-      'role:officeHead': 'رئيس الشعبة المكتبية',
-      'role:archiveHead': 'رئيس شعبة الأرشيف',
-      'div:field': 'الميدانية',
-      'div:office': 'المكتبية',
-      'div:archive': 'الأرشيف'
-    };
-    return PageBody(children: [
-      const PageHeader('توزيع التنبيهات',
-          subtitle: 'يحدد مدير النظام وحده من يصله كل تنبيه. كل تغيير يُسجَّل'),
-      AppCard(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 900),
-            child: Table(
-              columnWidths: const {0: FlexColumnWidth(3)},
-              defaultColumnWidth: const FlexColumnWidth(1.3),
-              border: const TableBorder(
-                  horizontalInside: BorderSide(color: Color(0xFFEEEEF0))),
-              children: [
-                TableRow(children: [
-                  const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text('التنبيه',
-                          style: TextStyle(fontWeight: FontWeight.w700))),
-                  for (final c in cols.values)
-                    Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(c,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 12))),
-                  const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Text('مستخدمون',
-                          textAlign: TextAlign.center,
+    final designated = <String>{};
+    for (final entries in st.routing.values) {
+      for (final e in entries) {
+        if (e.startsWith('user:')) designated.add(e);
+      }
+    }
+
+    return PageBody(
+      contentMaxWidth: double.infinity,
+      children: [
+        PageHeader(
+          'توزيع التنبيهات',
+          subtitle:
+              'حدّد لكل تنبيه الجهات المستهدفة. يُحفظ أي تغيير فورًا ويُسجَّل في سجل العمليات.',
+          actions: [
+            OutlinedButton.icon(
+              onPressed: () => context.go('/audit'),
+              icon: const Icon(CupertinoIcons.time, size: 17),
+              label: const Text('سجل العمليات'),
+            ),
+          ],
+        ),
+        StatGrid(
+          children: [
+            _UserStat(
+                label: 'أنواع التنبيهات',
+                value: '${kAlertTypes.length}',
+                icon: CupertinoIcons.bell_fill,
+                color: kGold),
+            _UserStat(
+                label: 'نقطة توزيع',
+                value: '${_roleCols.length + _divCols.length}',
+                icon: CupertinoIcons.building_2_fill,
+                color: kPrimary2),
+            _UserStat(
+                label: 'مستخدمون محددون',
+                value: '${designated.length}',
+                icon: CupertinoIcons.person_badge_plus,
+                color: const Color(0xFF7FB8FF)),
+          ],
+        ),
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: Column(children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: BoxDecoration(
+                  color: context.p.surfaceAlt,
+                  border: Border(
+                      bottom: BorderSide(color: context.p.border)),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                        colors: [kGold, Color(0xFFB8860B)],
+                      ),
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kGold.withValues(alpha: .35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(CupertinoIcons.bell_fill,
+                        size: 21, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'مصفوفة توزيع التنبيهات',
                           style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 12)))
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'انقر أي خلية لتفعيل أو إلغاء الوجهة — يُحفظ فورًا',
+                          style: TextStyle(
+                              color: context.p.muted, fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
                 ]),
-                for (final a in kAlertTypes.entries)
-                  TableRow(children: [
-                    Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(a.value,
-                            style: const TextStyle(fontSize: 13))),
-                    for (final c in cols.keys)
-                      Center(
-                          child: Checkbox(
-                              value: (st.routing[a.key] ?? []).contains(c),
-                              onChanged: (_) => st.toggleRoute(a.key, c))),
-                    Center(
-                        child: TextButton(
-                            onPressed: () => _users(context, st, a.key),
-                            child: Text(
-                                '${(st.routing[a.key] ?? []).where((x) => x.startsWith('user:')).length}'))),
-                  ]),
-              ],
+              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final table = _routingTable(context, st);
+                  if (constraints.maxWidth >= 880) return table;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 880),
+                      child: table,
+                    ),
+                  );
+                },
+              ),
+            ]),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 18, 14),
+          decoration: BoxDecoration(
+            color: kPrimary2.withValues(alpha: context.p.isDark ? .14 : .07),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: kPrimary2.withValues(alpha: .25)),
+          ),
+          child: Row(children: [
+            const Icon(CupertinoIcons.shield_fill, size: 22, color: kPrimary2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'مدير النظام يستلم كل التنبيهات دائمًا — لا يمكن استثناء حسابه من التوزيع.',
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w700, height: 1.4),
+              ),
+            ),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  Widget _routingTable(BuildContext context, AppStore st) {
+    final columns = <String, _RouteCol>{
+      for (final e in _roleCols.entries)
+        e.key: _RouteCol(_roleIcons[e.key.substring(5)] ?? e.value.$1,
+            e.value.$2, e.value.$3),
+      for (final e in _divCols.entries)
+        e.key: _RouteCol(
+            CupertinoIcons.building_2_fill, e.value.$1, e.value.$2),
+    };
+    return Table(
+      columnWidths: const {0: FlexColumnWidth(3)},
+      defaultColumnWidth: const FlexColumnWidth(1.15),
+      border: TableBorder.all(color: context.p.border, width: .6),
+      children: [
+        TableRow(
+          decoration: BoxDecoration(color: context.p.surfaceAlt),
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14),
+              child: Row(children: [
+                const Icon(CupertinoIcons.bell_fill,
+                    size: 14, color: kPrimary2),
+                const SizedBox(width: 8),
+                const Text('التنبيه',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+              ]),
+            ),
+            for (final c in columns.entries) _routeHeadCell(c.value),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+              child: Column(children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: kPrimary2.withValues(alpha: .14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(CupertinoIcons.person_crop_circle_fill,
+                      size: 19, color: kPrimary2),
+                ),
+                const SizedBox(height: 6),
+                Text('مستخدمون',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: context.p.muted)),
+              ]),
+            ),
+          ],
+        ),
+        for (var index = 0; index < kAlertTypes.entries.length; index++)
+          _routeRow(context, st, kAlertTypes.entries.elementAt(index),
+              columns, index.isOdd),
+      ],
+    );
+  }
+
+  Widget _routeHeadCell(_RouteCol col) => Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: col.color.withValues(alpha: .16),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: col.color.withValues(alpha: .30)),
+            ),
+            child: Icon(col.icon, size: 17, color: col.color),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            col.label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: const TextStyle(
+                fontSize: 10.5, fontWeight: FontWeight.w700, height: 1.25),
+          ),
+        ]),
+      );
+
+  TableRow _routeRow(BuildContext context, AppStore st,
+      MapEntry<String, String> entry, Map<String, _RouteCol> columns, bool zebra) {
+    final selected = (st.routing[entry.key] ?? [])
+        .where((e) => e.startsWith('user:'))
+        .length;
+    final dark = context.p.isDark;
+    return TableRow(
+      decoration: BoxDecoration(
+        color: zebra
+            ? (dark
+                ? Colors.white.withValues(alpha: .035)
+                : const Color(0xFFFAFBFA))
+            : null,
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 7, 14, 7),
+          child: Row(children: [
+            Container(
+              width: 8,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _alertColor(entry.key),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                entry.value,
+                style: const TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3),
+              ),
+            ),
+          ]),
+        ),
+        for (final c in columns.keys)
+          _PermCell(
+            granted: (st.routing[entry.key] ?? []).contains(c),
+            onToggle: () => st.toggleRoute(entry.key, c),
+          ),
+        Center(
+          child: InkWell(
+            onTap: () => _users(context, entry.key),
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 7, 12, 7),
+              decoration: BoxDecoration(
+                color: selected > 0
+                    ? kPrimary2.withValues(alpha: .12)
+                    : context.p.surfaceAlt,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: selected > 0
+                      ? kPrimary2.withValues(alpha: .40)
+                      : context.p.border,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    selected > 0
+                        ? CupertinoIcons.person_crop_circle_fill
+                        : CupertinoIcons.plus_circle,
+                    size: 15,
+                    color: selected > 0 ? kPrimary2 : context.p.muted,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    selected > 0 ? '$selected مستخدم' : 'تحديد',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: selected > 0 ? kPrimary2 : context.p.muted),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _RouteCol {
+  final IconData icon;
+  final String label;
+  final Color color;
+  const _RouteCol(this.icon, this.label, this.color);
+}
+
+class _AlertUsersDialog extends StatefulWidget {
+  final String type;
+  const _AlertUsersDialog({required this.type});
+  @override
+  State<_AlertUsersDialog> createState() => _AlertUsersDialogState();
+}
+
+class _AlertUsersDialogState extends State<_AlertUsersDialog> {
+  final q = TextEditingController();
+
+  static const _palette = [
+    kPrimary2,
+    kGold,
+    Color(0xFF7FB8FF),
+    Color(0xFF9FE3C0),
+    Color(0xFFFFA99B),
+    Color(0xFF9EC5FF),
+    Color(0xFFFFD27A),
+    Color(0xFFD6C2FF),
+  ];
+
+  @override
+  void dispose() {
+    q.dispose();
+    super.dispose();
+  }
+
+  Color _colorFor(String id) => _palette[id.hashCode.abs() % _palette.length];
+
+  @override
+  Widget build(BuildContext context) {
+    final st = context.watch<AppStore>();
+    final query = normAr(q.text.trim());
+    final users = st.users
+        .where((u) =>
+            query.isEmpty ||
+            normAr('${u.name} ${u.username}').contains(query))
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+    final routing = st.routing[widget.type] ?? [];
+    final selectedCount = routing.where((e) => e.startsWith('user:')).length;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      titlePadding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
+      contentPadding: const EdgeInsets.fromLTRB(22, 14, 22, 18),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      title: Row(children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: kGold.withValues(alpha: .16),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(CupertinoIcons.bell_fill, size: 21, color: kGold),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'تسليم: ${kAlertTypes[widget.type]}',
+                style: const TextStyle(
+                    fontSize: 15.5, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$selectedCount مستخدم محدد — يصله التنبيه إضافةً للوجهات العامة',
+                style: TextStyle(color: context.p.muted, fontSize: 11.5),
+              ),
+            ],
+          ),
+        ),
+      ]),
+      content: SizedBox(
+        width: 460,
+        height: 460,
+        child: Column(children: [
+          TextField(
+            controller: q,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'ابحث باسم المستخدم أو حسابه…',
+              hintStyle: TextStyle(color: context.p.muted, fontSize: 13),
+              prefixIcon: Icon(CupertinoIcons.search,
+                  size: 18, color: context.p.muted),
+              filled: true,
+              fillColor: context.p.surfaceAlt,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: kPrimary2.withValues(alpha: .55), width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                final key = 'user:${user.id}';
+                final checked = routing.contains(key);
+                final color = _colorFor(user.id);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 9, 12, 9),
+                  decoration: BoxDecoration(
+                    color: checked
+                        ? kPrimary2.withValues(alpha: .08)
+                        : context.p.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: checked
+                          ? kPrimary2.withValues(alpha: .35)
+                          : context.p.border,
+                    ),
+                  ),
+                  child: Row(children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: .18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          user.name.isEmpty ? '?' : user.name[0],
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user.name,
+                              style: const TextStyle(
+                                  fontSize: 13.5, fontWeight: FontWeight.w700)),
+                          Text(
+                            kRoles[user.role] ?? user.role,
+                            style: TextStyle(
+                                color: context.p.muted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: checked,
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: kPrimary2,
+                      onChanged: (_) => st.toggleRoute(widget.type, key),
+                    ),
+                  ]),
+                );
+              },
+            ),
+          ),
+        ]),
       ),
-      Text('مدير النظام يستلم كل التنبيهات دائماً.',
-          style: TextStyle(color: context.p.muted, fontSize: 12)),
-    ]);
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('تم'),
+        ),
+      ],
+    );
   }
 }
 
@@ -2969,176 +3409,542 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'declineMedium': 'عتبة الانخفاض المتوسط %'
     };
     final types = st.violationTypes;
-    return PageBody(children: [
-      PageHeader('الإعدادات والنسخ الاحتياطي', actions: [
-        FilledButton(
-          onPressed: () {
-            for (final k in nums.keys) {
-              final v = num.tryParse(ctl[k]?.text ?? '');
-              if (v != null) st.setSetting(k, v);
-            }
-            toast(context, 'حُفظت الإعدادات');
-          },
-          child: const Text('حفظ'),
-        ),
-      ]),
-      AppCard(
-        child: RadioGroup<String>(
-          groupValue: st.settings['serialMode'] as String,
-          onChanged: (value) {
-            if (value != null) st.setSetting('serialMode', value);
-          },
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('ترقيم المحاضر',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            const RadioListTile<String>(
-              value: 'manual',
-              title: Text(
-                  'رقم مطبوع مسبقاً يدخله الموظف (مع التحقق من التكرار ومن دفاتر الأرقام)'),
+    final serialMode = st.settings['serialMode'] as String? ?? 'manual';
+
+    return PageBody(
+      contentMaxWidth: double.infinity,
+      children: [
+        PageHeader(
+          'الإعدادات والنسخ الاحتياطي',
+          subtitle: 'قواعد النظام والنسخ والاستعادة',
+          actions: [
+            FilledButton.icon(
+              onPressed: () {
+                for (final k in nums.keys) {
+                  final v = num.tryParse(ctl[k]?.text ?? '');
+                  if (v != null) st.setSetting(k, v);
+                }
+                toast(context, 'حُفظت الإعدادات');
+              },
+              icon: const Icon(CupertinoIcons.checkmark_alt, size: 17),
+              label: const Text('حفظ الإعدادات'),
             ),
-            const RadioListTile<String>(
-              value: 'auto',
-              title: Text('رقم تلقائي من النظام'),
+          ],
+        ),
+        StatGrid(children: [
+          _UserStat(
+              label: 'أنواع المخالفات',
+              value: '${types.length}',
+              icon: CupertinoIcons.doc_text,
+              color: kPrimary2),
+          _UserStat(
+              label: 'الترقيم الحالي',
+              value: serialMode == 'manual' ? 'يدوي' : 'تلقائي',
+              icon: CupertinoIcons.list_number,
+              color: kGold),
+          _UserStat(
+              label: 'المظهر',
+              value: st.darkMode ? 'داكن' : 'فاتح',
+              icon: st.darkMode ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max,
+              color: const Color(0xFF9BB0FF)),
+        ]),
+        _premiumSection(
+          context,
+          icon: CupertinoIcons.list_number,
+          accent: kGold,
+          title: 'ترقيم المحاضر',
+          subtitle: 'كيف يأخذ كل محضر رقمه التسلسلي',
+          child: LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 720;
+            final manual = _serialOption(context,
+                icon: CupertinoIcons.pencil,
+                title: 'يدوي — رقم مطبوع مسبقاً',
+                subtitle:
+                    'الرقم مدوّن في الدفتر يدخله الموظف، ويتحقق النظام من التكرار ومن دفاتر الأرقام المسلّمة.',
+                selected: serialMode == 'manual',
+                onTap: () => st.setSetting('serialMode', 'manual'));
+            final auto = _serialOption(context,
+                icon: CupertinoIcons.number,
+                title: 'تلقائي — رقمه من النظام',
+                subtitle:
+                    'النظام يولّد رقماً متسلسلاً تلقائياً عند إنشاء كل محضر دون تدخل الموظف.',
+                selected: serialMode == 'auto',
+                onTap: () => st.setSetting('serialMode', 'auto'));
+            if (wide) {
+              return Row(
+                children: [
+                  Expanded(child: manual),
+                  const SizedBox(width: 14),
+                  Expanded(child: auto),
+                ],
+              );
+            }
+            return Column(
+              children: [
+                manual,
+                const SizedBox(height: 10),
+                auto,
+              ],
+            );
+          }),
+        ),
+        _premiumSection(
+          context,
+          icon: st.darkMode ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max,
+          accent: const Color(0xFF9BB0FF),
+          title: 'المظهر',
+          subtitle: 'يُطبَّق فوراً ويُحفظ مع الإعدادات — متاح أيضاً من زر القمر/الشمس أعلى الشاشة',
+          child: Row(children: [
+            Expanded(
+              child: Text(
+                st.darkMode ? 'الوضع الداكن مفعّل' : 'الوضع الفاتح مفعّل',
+                style: const TextStyle(
+                    fontSize: 14.5, fontWeight: FontWeight.w800),
+              ),
+            ),
+            Switch(
+              value: st.darkMode,
+              activeThumbColor: Colors.white,
+              activeTrackColor: const Color(0xFF3D4A7A),
+              onChanged: st.setDarkMode,
             ),
           ]),
         ),
+        _premiumSection(
+          context,
+          icon: CupertinoIcons.square_grid_2x2_fill,
+          accent: kPrimary2,
+          title: 'القواعد والعتبات',
+          subtitle: 'القيم الافتراضية التي يعتمدها النظام في التحليلات والغرامات',
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final e in nums.entries)
+                SizedBox(
+                  width: 300,
+                  child: TextField(
+                    controller: c(st, e.key),
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 15),
+                    decoration: InputDecoration(
+                      labelText: e.value,
+                      filled: true,
+                      fillColor: context.p.surfaceAlt,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      labelStyle:
+                          TextStyle(color: context.p.muted, fontSize: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                            color: kPrimary2.withValues(alpha: .6), width: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        _premiumSection(
+          context,
+          icon: CupertinoIcons.doc_text,
+          accent: kGold,
+          title: 'أنواع المخالفات',
+          subtitle: 'مخالفات يضيفها الموظف عند إنشاء محضر',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final n = await askText(context, 'نوع مخالفة جديد',
+                        label: 'اسم المخالفة');
+                    if (n != null) {
+                      st.setViolationTypes([
+                        ...types,
+                        {'name': n, 'article': '', 'fine': 0}
+                      ]);
+                    }
+                  },
+                  icon: const Icon(CupertinoIcons.add, size: 17),
+                  label: const Text('إضافة نوع'),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              if (types.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  child: Text(
+                    'لا توجد أنواع مخالفات — أضف أول نوع.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: context.p.muted, fontSize: 12.5),
+                  ),
+                )
+              else
+                for (var i = 0; i < types.length; i++)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding:
+                        const EdgeInsetsDirectional.fromSTEB(14, 10, 8, 10),
+                    decoration: BoxDecoration(
+                      color: context.p.surfaceAlt,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: context.p.border),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: kGold.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                            CupertinoIcons.exclamationmark_triangle_fill,
+                            size: 17,
+                            color: kGold),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          types[i]['name'] as String,
+                          style: const TextStyle(
+                              fontSize: 13.5, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'حذف النوع',
+                        icon: Icon(CupertinoIcons.trash,
+                            size: 20, color: kRed.withValues(alpha: .85)),
+                        onPressed: () =>
+                            st.setViolationTypes([...types]..removeAt(i))),
+                    ]),
+                  ),
+            ],
+          ),
+        ),
+        _premiumSection(
+          context,
+          icon: CupertinoIcons.arrow_down_circle_fill,
+          accent: kPrimary2,
+          title: 'النسخ الاحتياطي',
+          subtitle: 'خذ نسخة من بيانات النظام أو استعدها — في الإنتاج تُؤخذ النسخ من SQL Server على الخادم',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(spacing: 12, runSpacing: 12, children: [
+                _backupAction(context,
+                    icon: CupertinoIcons.arrow_down_circle_fill,
+                    color: kPrimary2,
+                    title: 'نسخ نسخة احتياطية',
+                    subtitle: 'نسخ كل بيانات النظام إلى الحافظة للاحتفاظ بها',
+                    onTap: () async {
+                      await Clipboard.setData(
+                          ClipboardData(text: st.exportAll()));
+                      if (context.mounted) {
+                        toast(context, 'نُسخت النسخة الاحتياطية إلى الحافظة');
+                      }
+                    }),
+                _backupAction(context,
+                    icon: CupertinoIcons.arrow_clockwise_circle_fill,
+                    color: kGold,
+                    title: 'استعادة نسخة',
+                    subtitle: 'الصق محتوى نسخة صالحة لاسترجاع البيانات',
+                    onTap: () => _restoreBackup(context)),
+                _backupAction(context,
+                    icon: CupertinoIcons.trash,
+                    color: kRed,
+                    title: 'إعادة البيانات التجريبية',
+                    subtitle: 'مسح كل البيانات الحالية وإرجاع العرض التوضيحي',
+                    onTap: () async {
+                      if (await confirmDialog(context,
+                              'إعادة البيانات التجريبية',
+                              'ستُحذف كل البيانات الحالية. المتابعة؟') &&
+                          context.mounted) {
+                        st.resetDemo();
+                      }
+                    }),
+              ]),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 11, 14, 11),
+                decoration: BoxDecoration(
+                  color: kGold.withValues(alpha: context.p.isDark ? .10 : .07),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: kGold.withValues(alpha: .30)),
+                ),
+                child: Row(children: [
+                  const Icon(CupertinoIcons.exclamationmark_triangle_fill,
+                      size: 18, color: kGold),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'الاستعادة تعيد البيانات فوراً ولا يمكن التراجع عنها — تأكد من حفظ نسخة قبل أي استعادة.',
+                      style: TextStyle(
+                          color: context.p.muted, fontSize: 11.5, height: 1.4),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _restoreBackup(BuildContext context) async {
+    final st = context.read<AppStore>();
+    final t = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text('استعادة نسخة',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        content: SizedBox(
+          width: 520,
+          child: TextField(
+            controller: t,
+            maxLines: 10,
+            style: const TextStyle(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'الصق محتوى النسخة هنا…',
+              hintStyle: TextStyle(color: context.p.muted, fontSize: 13),
+              filled: true,
+              fillColor: context.p.surfaceAlt,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: kGold.withValues(alpha: .6), width: 1.5),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('استعادة'),
+          ),
+        ],
       ),
-      AppCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('المظهر', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(
-              'يعمل التبديل فوراً ويُحفظ مع الإعدادات. متاح أيضاً من زر القمر/الشمس في الشريط العلوي.',
-              style: TextStyle(color: context.p.muted, fontSize: 12)),
-          const SizedBox(height: 6),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: st.darkMode,
-            onChanged: st.setDarkMode,
-            title: const Text('الوضع الداكن'),
-            subtitle: Text(st.darkMode ? 'مفعّل' : 'غير مفعّل',
-                style: TextStyle(color: context.p.muted, fontSize: 12)),
-            secondary: Icon(
-                st.darkMode ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max,
-                color: st.darkMode ? const Color(0xFF9BB0FF) : kGold),
+    );
+    if (ok == true && context.mounted) {
+      toast(
+          context,
+          st.importAll(t.text)
+              ? 'تمت الاستعادة. سجّل الدخول من جديد'
+              : 'النسخة غير صالحة');
+    }
+  }
+}
+
+/// ترويسة قسم مميز في الإعدادات — أيقونة متدرجة وعنوان ووصف.
+Widget _premiumSection(
+  BuildContext context, {
+  required IconData icon,
+  required Color accent,
+  required String title,
+  required String subtitle,
+  required Widget child,
+}) =>
+    AppCard(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(18, 13, 18, 13),
+            decoration: BoxDecoration(
+              color: context.p.surfaceAlt,
+              border: Border(bottom: BorderSide(color: context.p.border)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [
+                      accent,
+                      accent.withValues(alpha: .55),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, size: 19, color: Colors.white),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 13.5, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style:
+                            TextStyle(color: context.p.muted, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: child,
           ),
         ]),
       ),
-      AppCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('القواعد والعتبات',
-              style: TextStyle(fontWeight: FontWeight.w700)),
+    );
+
+/// خيار اختيار في صفحة الإعدادات (ترقيم المحاضر).
+Widget _serialOption(BuildContext context,
+    {required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool selected,
+    required VoidCallback onTap}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: selected ? kGold.withValues(alpha: .08) : context.p.surfaceAlt,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected
+              ? kGold.withValues(alpha: .7)
+              : context.p.border,
+          width: selected ? 1.5 : 1,
+        ),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                    color: kGold.withValues(alpha: .18),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4)),
+              ]
+            : null,
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  kGold.withValues(alpha: .5),
+                  kGold.withValues(alpha: .15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 22, color: kGold),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(title,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w800)),
+          ),
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? kGold : Colors.transparent,
+              border: Border.all(
+                color: selected
+                    ? kGold
+                    : context.p.muted.withValues(alpha: .4),
+                width: 1.6,
+              ),
+            ),
+            child: selected
+                ? const Icon(CupertinoIcons.checkmark_alt,
+                    size: 15, color: Colors.white)
+                : null,
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Text(subtitle,
+            style: TextStyle(
+                color: context.p.muted, fontSize: 11.5, height: 1.55)),
+      ]),
+    ),
+  );
+}
+
+/// مربّع إجراء في النسخ الاحتياطي.
+Widget _backupAction(BuildContext context,
+    {required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Container(
+      width: 255,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: .30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 26, color: color),
           const SizedBox(height: 10),
-          Wrap(spacing: 12, runSpacing: 12, children: [
-            for (final e in nums.entries)
-              SizedBox(
-                  width: 280,
-                  child: TextField(
-                      controller: c(st, e.key),
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: e.value)))
-          ]),
-        ]),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 13.5, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5),
+          Text(subtitle,
+              style: TextStyle(
+                  color: context.p.muted, fontSize: 11, height: 1.45)),
+        ],
       ),
-      AppCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Text('أنواع المخالفات',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final n = await askText(context, 'نوع مخالفة جديد',
-                    label: 'اسم المخالفة');
-                if (n != null) {
-                  st.setViolationTypes([
-                    ...types,
-                    {'name': n, 'article': '', 'fine': 0}
-                  ]);
-                }
-              },
-              icon: const Icon(CupertinoIcons.add),
-              label: const Text('إضافة نوع'),
-            ),
-          ]),
-          for (var i = 0; i < types.length; i++)
-            ListTile(
-                dense: true,
-                title: Text(types[i]['name'] as String),
-                trailing: IconButton(
-                    icon: const Icon(CupertinoIcons.trash),
-                    onPressed: () =>
-                        st.setViolationTypes([...types]..removeAt(i)))),
-        ]),
-      ),
-      AppCard(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('النسخ الاحتياطي',
-              style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(
-              'هذه نسخة من بيانات المتصفح التجريبية. في الإنتاج تُؤخذ النسخ من قاعدة SQL Server على الخادم.',
-              style: TextStyle(color: context.p.muted, fontSize: 12)),
-          const SizedBox(height: 10),
-          Wrap(spacing: 8, children: [
-            OutlinedButton(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: st.exportAll()));
-                  if (context.mounted) {
-                    toast(context, 'نُسخت النسخة الاحتياطية إلى الحافظة');
-                  }
-                },
-                child: const Text('نسخ نسخة احتياطية')),
-            OutlinedButton(
-              onPressed: () async {
-                final t = TextEditingController();
-                final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                            title: const Text('استعادة نسخة'),
-                            content: SizedBox(
-                                width: 520,
-                                child: TextField(
-                                    controller: t,
-                                    maxLines: 10,
-                                    decoration: const InputDecoration(
-                                        hintText: 'الصق محتوى النسخة هنا'))),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('إلغاء')),
-                              FilledButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('استعادة'))
-                            ]));
-                if (ok == true && context.mounted) {
-                  toast(
-                      context,
-                      st.importAll(t.text)
-                          ? 'تمت الاستعادة. سجّل الدخول من جديد'
-                          : 'النسخة غير صالحة');
-                }
-              },
-              child: const Text('استعادة نسخة'),
-            ),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: kRed, side: const BorderSide(color: kRed)),
-              onPressed: () async {
-                if (await confirmDialog(context, 'إعادة البيانات التجريبية',
-                        'ستُحذف كل البيانات الحالية. المتابعة؟') &&
-                    context.mounted) {
-                  st.resetDemo();
-                }
-              },
-              child: const Text('إعادة البيانات التجريبية'),
-            ),
-          ]),
-        ]),
-      ),
-    ]);
-  }
+    ),
+  );
 }
 
 String _stamp12(String value) {
