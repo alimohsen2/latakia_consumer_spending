@@ -99,6 +99,7 @@ class ProfileScreen extends StatelessWidget {
         completed: completed,
         cancelled: cancelled,
         fines: fines,
+        isSelf: isSelf,
       ),
       LayoutBuilder(builder: (context, constraints) {
         final wide = constraints.maxWidth >= 880;
@@ -398,10 +399,15 @@ class _HeroCard extends StatelessWidget {
                                         Radius.circular(12))),
                               ),
                               icon: const Icon(CupertinoIcons.time, size: 17),
-                              label: const Text(
-                                'سجل نشاطه',
-                                style: TextStyle(fontSize: 13),
-                              ),
+                              label: isSelf
+                                  ? const Text(
+                                      'سجل نشاطي',
+                                      style: TextStyle(fontSize: 13),
+                                    )
+                                  : const Text(
+                                      'سجل نشاطه',
+                                      style: TextStyle(fontSize: 13),
+                                    ),
                             ),
                           if (isSelf)
                             FilledButton.icon(
@@ -535,7 +541,7 @@ class _HeroCard extends StatelessWidget {
                     children: [
                       _GlassPill(
                         icon: CupertinoIcons.doc_text,
-                        label: 'محاضري',
+                        label: isSelf ? 'محاضري' : 'محاضره',
                         value: '$reportsCount',
                       ),
                       _GlassPill(
@@ -817,19 +823,22 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
 class _ProfileStatsRow extends StatelessWidget {
   final int reportsCount, inProgress, completed, cancelled;
   final num fines;
+  final bool isSelf;
   const _ProfileStatsRow({
     required this.reportsCount,
     required this.inProgress,
     required this.completed,
     required this.cancelled,
     required this.fines,
+    required this.isSelf,
   });
 
   @override
   Widget build(BuildContext context) {
     final dark = context.p.isDark;
     final stats = <_Stat>[
-      _Stat('محاضري', '$reportsCount', CupertinoIcons.doc_text, kPrimary2),
+      _Stat(isSelf ? 'محاضري' : 'محاضره', '$reportsCount',
+          CupertinoIcons.doc_text, kPrimary2),
       _Stat('قيد الإنجاز', '$inProgress', CupertinoIcons.clock_fill, kGold,
           warn: inProgress > 0),
       _Stat('معتمدة أو مقفلة', '$completed', CupertinoIcons.checkmark_seal_fill,
