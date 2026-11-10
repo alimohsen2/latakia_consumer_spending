@@ -485,7 +485,6 @@ class _UsersScreenState extends State<UsersScreen> {
   String role = '', div = '';
   String status = '';
   String view = 'table';
-  int cardColumns = 2;
   final query = TextEditingController();
 
   @override
@@ -955,11 +954,6 @@ class _UsersScreenState extends State<UsersScreen> {
               ),
               Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
                   (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
-              if (view == 'cards') ...[
-                const SizedBox(width: 8),
-                Seg(const ['١ عمود', '٢ عمود', '٣ أعمدة'], cardColumns - 1,
-                    (i) => setState(() => cardColumns = i + 1)),
-              ],
             ]),
             const SizedBox(height: 14),
             TextField(
@@ -1136,7 +1130,7 @@ class _UsersScreenState extends State<UsersScreen> {
       else
         LayoutBuilder(
           builder: (context, constraints) {
-            final cols = cardColumns;
+            const cols = 2;
             const double spacing = 12.0;
             final itemWidth =
                 (constraints.maxWidth - spacing * (cols - 1)) / cols;
