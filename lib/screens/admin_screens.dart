@@ -1050,8 +1050,7 @@ class _UsersScreenState extends State<UsersScreen> {
           onRowTap: (index) => context.go('/users/${list[index].id}/profile'),
           heads: const [
             '#',
-            'أيقونة الدور',
-            'المستخدم',
+            'الأيقونة',
             'اسم المستخدم',
             'الدور',
             'الشعبة',
@@ -1062,7 +1061,7 @@ class _UsersScreenState extends State<UsersScreen> {
             'الحالة',
             '',
           ],
-          flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+          flex: const [1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
           rows: [
             for (var index = 0; index < list.length; index++)
               [
@@ -1071,7 +1070,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   message: kRoles[list[index].role] ?? list[index].role,
                   child: _RoleIcon(role: list[index].role),
                 ),
-                cellText(list[index].name, bold: true),
                 cellText(list[index].username),
                 cellText(kRoles[list[index].role] ?? list[index].role),
                 cellText(kDivisionNames[list[index].division] ??
