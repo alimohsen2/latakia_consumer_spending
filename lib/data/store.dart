@@ -182,6 +182,17 @@ class AppStore extends ChangeNotifier {
         if (oldDivisionHeadPerms != null) migrated = true;
       }
     }
+    // تُضاف صلاحية «عرض صلاحيات المستخدم» للنسخ المحفوظة قبل إضافتها.
+    for (final role in perms.keys.toList()) {
+      if (role == 'sysadmin') {
+        perms[role] = kPerms.keys.toList();
+        continue;
+      }
+      if (!perms[role]!.contains('permissions.view')) {
+        perms[role]!.add('permissions.view');
+        migrated = true;
+      }
+    }
     // مدير النظام يملك كل الصلاحيات دائماً، حتى في النسخ المحفوظة قبل إضافة صلاحيات جديدة.
     perms['sysadmin'] = kPerms.keys.toList();
     routing = ((j['routing'] as Map?) ?? {})

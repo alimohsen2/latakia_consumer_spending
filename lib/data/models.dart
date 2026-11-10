@@ -70,6 +70,7 @@ const kPerms = {
   'archive.edit': 'تسجيل موقع المحضر في الأرشيف',
   'archive.attachments': 'إضافة مرفقات المحاضر وحذفها',
   'field.view': 'العمل الميداني والتدقيق الميداني',
+  'permissions.view': 'عرض صلاحيات المستخدم',
 };
 
 const kAlertTypes = {
@@ -100,7 +101,8 @@ Map<String, List<String>> defaultPerms() {
     'reports.center',
     'archive.view',
     'archive.attachments',
-    'field.view'
+    'field.view',
+    'permissions.view'
   ];
   return {
     'sysadmin': kPerms.keys.toList(),
@@ -123,7 +125,8 @@ Map<String, List<String>> defaultPerms() {
       'archive.view',
       'archive.edit',
       'archive.attachments',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
     'sectionHead': [
       'taxpayers.view',
@@ -135,7 +138,8 @@ Map<String, List<String>> defaultPerms() {
       'audit.view',
       'integrity.view',
       'archive.view',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
     'infoSectionHead': [
       'taxpayers.view',
@@ -147,7 +151,8 @@ Map<String, List<String>> defaultPerms() {
       'audit.view',
       'integrity.view',
       'archive.view',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
     'deptHead': [
       'taxpayers.view',
@@ -168,7 +173,8 @@ Map<String, List<String>> defaultPerms() {
       'archive.view',
       'archive.edit',
       'archive.attachments',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
     for (final role in kDivisionHeadRoles.values)
       role: List<String>.from(divisionHeadPerms),
@@ -176,7 +182,8 @@ Map<String, List<String>> defaultPerms() {
       'reports.view',
       'reports.create',
       'reports.print',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
     'user': [
       'taxpayers.view',
@@ -188,7 +195,8 @@ Map<String, List<String>> defaultPerms() {
       'statements.edit',
       'alerts.view',
       'archive.view',
-      'field.view'
+      'field.view',
+      'permissions.view'
     ],
   };
 }

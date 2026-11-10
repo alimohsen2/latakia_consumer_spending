@@ -64,7 +64,10 @@ class ProfileScreen extends StatelessWidget {
     final permissions = st.effectivePermsFor(user);
     final canEditPerms = st.can('users.manage') && user.role != 'sysadmin';
     final canManageUsers = st.can('users.manage');
-    final createdStamp = _stamp(user.createdAt);
+    final canShowLifecycle = canManageUsers && !isSelf;
+    final createdAt = DateTime.tryParse(user.createdAt);
+    final createdDate = createdAt == null ? '—' : fmtDate(createdAt);
+    final createdTime = createdAt == null ? '—' : fmtTime12(createdAt);
 
     return PageBody(children: [
       if (userId != null)
@@ -136,7 +139,7 @@ class ProfileScreen extends StatelessWidget {
             ]),
           ],
         );
-        final lifecycle = canManageUsers
+        final lifecycle = canShowLifecycle
             ? _CollapsibleSection(
                 title: 'الإنشاء والإغلاق',
                 subtitle: 'سجل إنشاء الحساب والجهات المسؤولة عنه',
@@ -153,7 +156,12 @@ class ProfileScreen extends StatelessWidget {
                     _InfoCard(
                       icon: CupertinoIcons.calendar_circle,
                       label: 'تاريخ إنشاء الحساب',
-                      value: createdStamp,
+                      value: createdDate,
+                    ),
+                    _InfoCard(
+                      icon: CupertinoIcons.clock,
+                      label: 'وقت إنشاء الحساب',
+                      value: createdTime,
                     ),
                     _InfoCard(
                       icon: CupertinoIcons.person_badge_plus,
@@ -195,6 +203,7 @@ class ProfileScreen extends StatelessWidget {
             ],
           ],
         );
+        final showPerms = st.can('permissions.view');
         final side = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -221,6 +230,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         );
+        if (!showPerms) return details;
         if (!wide) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
