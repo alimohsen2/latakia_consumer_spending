@@ -519,85 +519,119 @@ class _UsersScreenState extends State<UsersScreen> {
       'disabled' => kGold,
       _ => const Color(0xFF34C759),
     };
+    final statusLabel = switch (user.status) {
+      'closed' => 'مغلق نهائيًا',
+      'disabled' => 'معطل مؤقتًا',
+      _ => 'فعال',
+    };
 
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: ctx.p.surface,
-        shape:
-            ContinuousRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(34)),
         titlePadding: EdgeInsets.zero,
-        contentPadding: const EdgeInsets.fromLTRB(18, 16, 18, 4),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        contentPadding:
+            const EdgeInsets.fromLTRB(22, 18, 22, 8),
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         title: Container(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: AlignmentDirectional.topStart,
               end: AlignmentDirectional.bottomEnd,
               colors: [
-                Color(0xFF1D6054),
+                Color(0xFF24695C),
                 Color(0xFF17574E),
                 Color(0xFF0E3A34),
               ],
             ),
           ),
-          child: Row(
-            children: [
-              _UserAvatar(
-                store: context.read<AppStore>(),
-                user: user,
-                radius: 32,
-                statusColor: statusColor,
-                borderColor: Colors.white.withValues(alpha: .55),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
+          child: Stack(children: [
+            PositionedDirectional(
+              top: -50,
+              end: -50,
+              child: _GlowCircle(color: kGold.withValues(alpha: .26), size: 180),
+            ),
+            PositionedDirectional(
+              bottom: -60,
+              start: -60,
+              child: _GlowCircle(
+                  color: kPrimary2.withValues(alpha: .32), size: 220),
+            ),
+            Row(
+              children: [
+                _LargeAvatar(
+                  store: context.read<AppStore>(),
+                  user: user,
+                  statusColor: statusColor,
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                          letterSpacing: -0.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '@${user.username}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: .74),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 5),
+                      Container(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            11, 5, 11, 5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: Colors.white.withValues(alpha: .22)),
+                        ),
+                        child: Text(
+                          '@${user.username}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: .92),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _GlassChip(
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _GlassPill(
                             icon: CupertinoIcons.briefcase_fill,
-                            label: kRoles[user.role] ?? user.role),
-                        if (user.division.isNotEmpty)
-                          _GlassChip(
+                            label: kRoles[user.role] ?? user.role,
+                          ),
+                          if (user.division.isNotEmpty)
+                            _GlassPill(
                               icon: CupertinoIcons.building_2_fill,
                               label: kDivisionNames[user.division] ??
                                   kDivisions[user.division] ??
-                                  user.division),
-                      ],
-                    ),
-                  ],
+                                  user.division,
+                            ),
+                          _StatusPill(label: statusLabel, color: statusColor),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ]),
         ),
         content: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 440, maxWidth: 560),
+          constraints: const BoxConstraints(maxHeight: 480, maxWidth: 580),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,76 +641,89 @@ class _UsersScreenState extends State<UsersScreen> {
                   title: 'بيانات الحساب',
                   accent: kPrimary2,
                   rows: [
-                    _InfoRow(label: 'الاسم الكامل', value: user.name),
-                    _InfoRow(label: 'اسم المستخدم', value: user.username),
                     _InfoRow(
+                        icon: CupertinoIcons.person_fill,
+                        label: 'الاسم الكامل',
+                        value: user.name),
+                    _InfoRow(
+                        icon: CupertinoIcons.at,
+                        label: 'اسم المستخدم',
+                        value: user.username),
+                    _InfoRow(
+                        icon: CupertinoIcons.phone_fill,
                         label: 'رقم الموبايل',
                         value: user.phone.isEmpty ? '—' : user.phone),
                     _InfoRow(
+                        icon: CupertinoIcons.briefcase_fill,
                         label: 'الدور',
-                        value: kRoles[user.role] ?? user.role),
+                        value: kRoles[user.role] ?? user.role,
+                        accent: kGold),
                     if (user.division.isNotEmpty)
                       _InfoRow(
+                          icon: CupertinoIcons.building_2_fill,
                           label: 'الشعبة',
                           value: kDivisionNames[user.division] ??
                               kDivisions[user.division] ??
                               user.division),
                     _InfoRow(
+                        icon: CupertinoIcons.person_2_fill,
                         label: 'المسؤول المباشر',
                         value: manager?.name ?? '—'),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 _HistorySection(
                   icon: CupertinoIcons.calendar_badge_plus,
                   title: 'الإنشاء والإغلاق',
                   accent: kGold,
                   rows: [
                     _InfoRow(
+                      icon: CupertinoIcons.calendar_circle,
                       label: 'تاريخ الإنشاء',
                       value: _stampDate(user.createdAt),
-                      icon: CupertinoIcons.calendar_circle,
                     ),
                     _InfoRow(
+                      icon: CupertinoIcons.clock,
                       label: 'وقت الإنشاء',
                       value: _stampTime(user.createdAt),
-                      icon: CupertinoIcons.clock,
                     ),
                     _InfoRow(
+                      icon: CupertinoIcons.person_badge_plus,
                       label: 'أنشئ من قبل',
                       value: creatorName,
-                      icon: CupertinoIcons.person_badge_plus,
                     ),
                     if (user.status == 'closed') ...[
                       _InfoRow(
+                        icon: CupertinoIcons.lock_fill,
                         label: 'تاريخ الإغلاق',
                         value: _stamp12(user.closedAt),
-                        icon: CupertinoIcons.lock_fill,
                         accent: kRed,
                       ),
                       if (user.closedBy.isNotEmpty)
                         _InfoRow(
+                          icon: CupertinoIcons.xmark_circle_fill,
                           label: 'أغلقه',
                           value: user.closedBy,
-                          icon: CupertinoIcons.xmark_circle_fill,
                           accent: kRed,
                         ),
                       if (user.closureReason.isNotEmpty)
                         _InfoRow(
+                          icon: CupertinoIcons.exclamationmark_circle,
                           label: 'سبب الإغلاق',
                           value: user.closureReason,
-                          icon: CupertinoIcons.exclamationmark_circle,
                           accent: kRed,
                         ),
                     ],
                   ],
                 ),
                 if (user.statusPeriods.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   _HistorySection(
                     icon: CupertinoIcons.clock,
                     title: 'سجل التعطيل وإعادة التفعيل',
                     accent: kGold,
+                    subtitle:
+                        'الفترات التي أُوقف فيها الحساب وأعيد تفعيله',
                     rows: [
                       for (var index = 0;
                           index < user.statusPeriods.length;
@@ -689,36 +736,28 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ],
                 if (user.passwordChangeRequired) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-                    decoration: BoxDecoration(
-                      color: kGold.withValues(
-                          alpha: context.p.isDark ? .16 : .10),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: kGold.withValues(alpha: .35)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(CupertinoIcons.exclamationmark_triangle_fill,
-                            size: 16, color: kGold),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'كلمة مرور مؤقتة — التغيير مطلوب عند الدخول التالي.',
-                            style: TextStyle(
-                              color: context.p.isDark
-                                  ? const Color(0xFFE9CEA8)
-                                  : const Color(0xFF6B4A0C),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 14),
+                  _BannerNote(
+                    icon: CupertinoIcons.exclamationmark_triangle_fill,
+                    text:
+                        'كلمة مرور مؤقتة — التغيير مطلوب عند الدخول التالي.',
+                    color: kGold,
+                  ),
+                ],
+                if (user.status == 'disabled') ...[
+                  const SizedBox(height: 14),
+                  _BannerNote(
+                    icon: CupertinoIcons.pause_circle_fill,
+                    text: 'هذا الحساب معطل مؤقتًا ولا يستطيع الدخول.',
+                    color: kGold,
+                  ),
+                ],
+                if (user.status == 'closed') ...[
+                  const SizedBox(height: 14),
+                  _BannerNote(
+                    icon: CupertinoIcons.lock_fill,
+                    text: 'هذا الحساب مغلق نهائيًا ولا يمكن إعادة تفعيله.',
+                    color: kRed,
                   ),
                 ],
               ],
@@ -726,18 +765,33 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: ctx.p.muted,
+              padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 18, 14),
+            ),
+            child: const Text('إغلاق',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(context);
               context.go('/users/${user.id}/profile');
             },
-            style: FilledButton.styleFrom(backgroundColor: kPrimary),
-            icon: const Icon(CupertinoIcons.person_crop_circle_fill, size: 18),
-            label: const Text('عرض الملف الشخصي'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
+            style: FilledButton.styleFrom(
+              backgroundColor: kPrimary,
+              padding:
+                  const EdgeInsetsDirectional.fromSTEB(18, 14, 18, 14),
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            icon: const Icon(CupertinoIcons.person_crop_circle_fill,
+                size: 18),
+            label: const Text(
+              'عرض الملف الشخصي',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
           ),
         ],
       ),
@@ -2830,29 +2884,229 @@ class _UserAvatar extends StatelessWidget {
   }
 }
 
-/// شريحة زجاجية للرأس الداكن.
-class _GlassChip extends StatelessWidget {
+/// توهج دائري للرأس الداكن.
+class _GlowCircle extends StatelessWidget {
+  final Color color;
+  final double size;
+  const _GlowCircle({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+        child: SizedBox(width: size, height: size),
+      );
+}
+
+/// صورة دائرية كبيرة مع حلقة ذهبية ونقطة حالة.
+class _LargeAvatar extends StatelessWidget {
+  final AppStore store;
+  final AppUser user;
+  final Color statusColor;
+  const _LargeAvatar({
+    required this.store,
+    required this.user,
+    required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 96.0;
+    final initial =
+        user.name.trim().isEmpty ? '؟' : user.name.trim().substring(0, 1);
+    return SizedBox(
+      width: size + 16,
+      height: size + 16,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [Color(0xFFE9D9B4), Color(0xFFA98545)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black,
+                  blurRadius: 18,
+                  spreadRadius: -4,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [Color(0xFF2E8C7E), Color(0xFF17574E)],
+                  ),
+                ),
+                child: ClipOval(
+                  child: FutureBuilder<Uint8List?>(
+                    key: ValueKey(user.photoId),
+                    future: user.photoId.isEmpty
+                        ? null
+                        : store.attachmentBytes(user.photoId),
+                    builder: (context, snapshot) {
+                      final bytes = snapshot.data;
+                      return bytes == null
+                          ? Center(
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            )
+                          : Image.memory(bytes, fit: BoxFit.cover);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            end: 2,
+            bottom: 6,
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: statusColor,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    blurRadius: 6,
+                    spreadRadius: -2,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شريحة زجاجية فاخرة للرأس الداكن.
+class _GlassPill extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _GlassChip({required this.icon, required this.label});
+  const _GlassPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(9, 4, 11, 4),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .12),
+          color: Colors.white.withValues(alpha: .13),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: .18)),
+          border: Border.all(color: Colors.white.withValues(alpha: .22)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 12, color: Colors.white.withValues(alpha: .92)),
-          const SizedBox(width: 5),
+          Icon(icon, size: 13, color: Colors.white.withValues(alpha: .95)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .95),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: .2,
+            ),
+          ),
+        ]),
+      );
+}
+
+/// شارة حالة بجانب الاسم في الرأس.
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusPill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(11, 5, 11, 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .22),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: .55)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
               color: Colors.white.withValues(alpha: .92),
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ]),
+      );
+}
+
+/// لافتة تنبيه ذهبية/حمراء داخل الحوار.
+class _BannerNote extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+  const _BannerNote(
+      {required this.icon, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: context.p.isDark ? .16 : .1),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withValues(alpha: .35)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 17, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: context.p.isDark
+                    ? Colors.white.withValues(alpha: .92)
+                    : context.p.text,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+              ),
             ),
           ),
         ]),
@@ -3155,53 +3409,70 @@ class _UserCard extends StatelessWidget {
 class _HistorySection extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final Color accent;
   final List<Widget> rows;
   const _HistorySection({
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.accent,
     required this.rows,
   });
 
   @override
   Widget build(BuildContext context) => AppCard(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: AlignmentDirectional.topStart,
                     end: AlignmentDirectional.bottomEnd,
                     colors: [
-                      accent.withValues(alpha: .26),
-                      accent.withValues(alpha: .08),
+                      accent.withValues(alpha: .28),
+                      accent.withValues(alpha: .1),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: accent.withValues(alpha: .35)),
                 ),
-                child: Icon(icon, size: 17, color: accent),
+                child: Icon(icon, size: 21, color: accent),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 13),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                            color: context.p.muted, fontSize: 11, height: 1.3),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ]),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             for (final row in rows) ...[
               row,
-              if (row != rows.last) const Divider(height: 14),
+              if (row != rows.last) const Divider(height: 16),
             ],
           ],
         ),
@@ -3222,32 +3493,51 @@ class _InfoRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: accent ?? context.p.muted),
-            const SizedBox(width: 8),
-          ] else
-            const SizedBox(width: 2),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: context.p.muted, fontSize: 12.5),
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: accent ?? context.p.text,
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 1),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: (accent ?? kPrimary2).withValues(alpha: .13),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon,
+                    size: 17,
+                    color: accent ?? kPrimary2),
+              ),
+              const SizedBox(width: 12),
+            ] else
+              const SizedBox(width: 2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                        color: context.p.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: accent ?? context.p.text,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
 }
 
