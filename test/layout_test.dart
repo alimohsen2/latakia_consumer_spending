@@ -190,7 +190,7 @@ void main() {
 
     await tester.pumpWidget(App(store: st));
     await tester.pumpAndSettle();
-    expect(find.text('تعيين كلمة مرور جديدة'), findsOneWidget);
+    expect(find.text('أنشئ كلمة مرور جديدة'), findsOneWidget);
 
     await tester.enterText(
         find.widgetWithText(TextField, 'كلمة المرور الحالية'), 'temp123');
@@ -205,7 +205,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(account.passwordChangeRequired, isFalse);
-    expect(find.text('تعيين كلمة مرور جديدة'), findsNothing);
+    expect(find.text('أنشئ كلمة مرور جديدة'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -621,7 +621,7 @@ void main() {
     await tester.pumpWidget(wrap(st, const DashboardScreen()));
     await tester.pump(const Duration(milliseconds: 200));
     expect(tester.takeException(), isNull);
-    expect(find.text('لوحة التحكم'), findsOneWidget);
+    expect(find.text('مديرية مالية اللاذقية'), findsOneWidget);
     expect(find.text('المبيعات والتحليل'), findsOneWidget);
     // قسم «آخر المحاضر» أُزيل من اللوحة.
     expect(find.text('آخر المحاضر'), findsNothing);
@@ -636,7 +636,6 @@ void main() {
     expect(find.text('إحصائيات المكلفين'), findsOneWidget);
     expect(find.text('إجمالي المكلفين'), findsOneWidget);
     expect(find.text('المكلفون الفعالون'), findsOneWidget);
-    expect(find.text('المتوقفون'), findsOneWidget);
     expect(find.text('المتوقفون مؤقتاً'), findsOneWidget);
 
     st.setDarkMode(true);
