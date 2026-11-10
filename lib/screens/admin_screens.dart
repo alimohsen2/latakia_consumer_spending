@@ -1980,6 +1980,61 @@ class _AuditScreenState extends State<AuditScreen> {
     super.dispose();
   }
 
+  static const _avatarPalette = [
+    kPrimary2,
+    kGold,
+    Color(0xFF7FB8FF),
+    Color(0xFF9FE3C0),
+    Color(0xFFFFA99B),
+    Color(0xFF9EC5FF),
+    Color(0xFFFFD27A),
+    Color(0xFFD6C2FF),
+  ];
+
+  Color _avatarColor(String key) {
+    final hash = key.hashCode & 0x7fffffff;
+    return _avatarPalette[hash % _avatarPalette.length];
+  }
+
+  (IconData, Color) _actionMeta(String action) {
+    if (action.contains('مزامنة')) {
+      return (CupertinoIcons.arrow_clockwise_circle_fill, kPrimary2);
+    }
+    if (action.contains('إنشاء') || action.contains('إضافة') ||
+        action.contains('استلام')) {
+      return (CupertinoIcons.plus_circle_fill, const Color(0xFF34C759));
+    }
+    if (action.contains('تعديل') || action.contains('تحديث') ||
+        action.contains('تغيير') || action.contains('ترحيل') ||
+        action.contains('تحديث')) {
+      return (CupertinoIcons.pencil, kGold);
+    }
+    if (action.contains('إلغاء') || action.contains('حذف')) {
+      return (CupertinoIcons.trash, kRed);
+    }
+    if (action.contains('إغلاق')) {
+      return (CupertinoIcons.lock_fill, kRed);
+    }
+    if (action.contains('اعتماد') || action.contains('قفل') ||
+        action.contains('ختم')) {
+      return (CupertinoIcons.checkmark_seal_fill, kGold);
+    }
+    if (action.contains('تصدير') || action.contains('استعادة')) {
+      return (CupertinoIcons.arrow_down_circle_fill, const Color(0xFF7FB8FF));
+    }
+    if (action.contains('دخول') || action.contains('خروج') ||
+        action.contains('تسجيل الدخول')) {
+      return (CupertinoIcons.person_crop_circle, const Color(0xFF9EC5FF));
+    }
+    if (action.contains('كلمة مرور')) {
+      return (CupertinoIcons.lock_shield_fill, kGold);
+    }
+    if (action.contains('توقيع')) {
+      return (CupertinoIcons.signature, kPrimary2);
+    }
+    return (CupertinoIcons.info, kPrimary2);
+  }
+
   @override
   Widget build(BuildContext context) {
     final st = context.watch<AppStore>();
@@ -2002,64 +2057,228 @@ class _AuditScreenState extends State<AuditScreen> {
                 normAr('${e.user} ${e.action} ${e.entity} ${e.detail}')
                     .contains(nq)))
         .toList();
+    final uniqueActions = <String>{};
+    final uniqueUsers = <String>{};
+    for (final e in st.audit) {
+      uniqueActions.add(e.action);
+      uniqueUsers.add(e.user);
+    }
+
     return PageBody(children: [
-      const PageHeader('سجل العمليات',
-          subtitle:
-              'منفذ العملية هو المستخدم الذي أجراها، والعنصر المتأثر هو السجل الذي عُدّل. '
-              'التفاصيل تعرض معلومات إضافية. السجل للقراءة فقط ومترابط ببصمات تكشف التعديل أو الحذف.'),
+      PageHeader(
+        'سجل العمليات',
+        subtitle:
+            'منفذ العملية هو المستخدم الذي أجراها، والعنصر المتأثر هو السجل الذي عُدّل. '
+            'التفاصيل تعرض معلومات إضافية. السجل للقراءة فقط ومترابط ببصمات تكشف التعديل أو الحذف.',
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () => context.go('/integrity'),
+            icon: const Icon(CupertinoIcons.checkmark_shield_fill, size: 17),
+            label: const Text('فحص السلامة'),
+          ),
+        ],
+      ),
+      Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          _UserStat(
+              label: 'إجمالي السجلات',
+              value: '${st.audit.length}',
+              icon: CupertinoIcons.doc_text,
+              color: kPrimary2),
+          _UserStat(
+              label: 'المعروض حالياً',
+              value: '${list.length}',
+              icon: CupertinoIcons.eye_fill,
+              color: kGold),
+          _UserStat(
+              label: 'المستخدمون',
+              value: '${uniqueUsers.length}',
+              icon: CupertinoIcons.person_2_fill,
+              color: const Color(0xFF7FB8FF)),
+          _UserStat(
+              label: 'أنواع العمليات',
+              value: '${uniqueActions.length}',
+              icon: CupertinoIcons.square_grid_2x2_fill,
+              color: const Color(0xFF9FE3C0)),
+        ],
+      ),
       AppCard(
-        child: Column(children: [
-          rowOf([
-            Drop(
-              'عرض عمليات المستخدم',
-              userFilter,
-              userOptions,
-              (value) => setState(() => userFilter = value),
-            ),
-            Expanded(
-              child: TextField(
-                controller: q,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: 'بحث في السجل',
-                  prefixIcon: Icon(CupertinoIcons.search),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [kPrimary2, Color(0xFF17574E)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(CupertinoIcons.doc_text,
+                    size: 19, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'تصفية سجل العمليات',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
+              Container(
+                padding:
+                    const EdgeInsetsDirectional.fromSTEB(12, 7, 12, 7),
+                decoration: BoxDecoration(
+                  color: kGold.withValues(alpha: context.p.isDark ? .16 : .10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: kGold.withValues(alpha: .35)),
+                ),
+                child: Row(children: [
+                  const Icon(CupertinoIcons.lock_fill,
+                      size: 13, color: Color(0xFF8A5A00)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'سجل للقراءة فقط',
+                    style: TextStyle(
+                      color: context.p.isDark
+                          ? const Color(0xFFE9CEA8)
+                          : const Color(0xFF6B4A0C),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            rowOf([
+              Drop(
+                'عرض عمليات المستخدم',
+                userFilter,
+                userOptions,
+                (value) => setState(() => userFilter = value),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: q,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: 'بحث في السجل',
+                    prefixIcon: const Icon(CupertinoIcons.search),
+                    suffixIcon: q.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(CupertinoIcons.xmark_circle_fill,
+                                size: 19),
+                            onPressed: () {
+                              q.clear();
+                              setState(() {});
+                            },
+                          ),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'عدد العمليات المعروضة: ${list.length}',
+                style: TextStyle(color: context.p.muted, fontSize: 12),
+              ),
             ),
-          ]),
-          const SizedBox(height: 8),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              'عدد العمليات المعروضة: ${list.length}',
-              style: TextStyle(color: context.p.muted, fontSize: 12),
-            ),
+          ],
+        ),
+      ),
+      if (list.isEmpty)
+        AppCard(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Column(children: [
+              Icon(CupertinoIcons.doc_text_search,
+                  size: 46, color: context.p.muted),
+              const SizedBox(height: 10),
+              const Text(
+                'لا توجد عمليات مطابقة',
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'جرّب مسح البحث أو تغيير الفلتر.',
+                style: TextStyle(color: context.p.muted, fontSize: 13),
+              ),
+            ]),
           ),
-        ]),
-      ),
-      GridTable(
-        heads: const [
-          'منفذ العملية',
-          'نوع العملية',
-          'العنصر المتأثر',
-          'تفاصيل إضافية',
-          'الوقت',
-          'البصمة'
-        ],
-        flex: const [2, 2, 2, 4, 2, 2],
-        minWidth: 1120,
-        rows: [
-          for (final e in list)
-            [
-              _auditCell(e.user),
-              _auditCell(e.action, bold: true),
-              _auditCell(e.entity),
-              _auditCell(e.detail.isEmpty ? '—' : e.detail),
-              cellText(fmtDT(DateTime.parse(e.ts))),
-              cellText(e.hash.substring(0, 10))
-            ]
-        ],
-      ),
+        )
+      else
+        GridTable(
+          heads: const [
+            'منفذ العملية',
+            'نوع العملية',
+            'العنصر المتأثر',
+            'تفاصيل إضافية',
+            'الوقت',
+            'البصمة',
+          ],
+          flex: const [2, 3, 2, 4, 2, 2],
+          minWidth: 1120,
+          rows: [
+            for (final e in list)
+              [
+                Tooltip(
+                  message: e.user,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor:
+                            _avatarColor(e.user).withValues(alpha: .2),
+                        child: Text(
+                          e.user.trim().isEmpty
+                              ? '؟'
+                              : e.user.trim().substring(0, 1),
+                          style: TextStyle(
+                              color: _avatarColor(e.user),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          e.user,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _ActionCell(action: e.action, meta: _actionMeta),
+                _auditCell(e.entity),
+                _auditCell(e.detail.isEmpty ? '—' : e.detail),
+                Tooltip(
+                  message: e.ts,
+                  child: cellText(fmtDT12(DateTime.parse(e.ts))),
+                ),
+                _FingerprintCell(hash: e.hash),
+              ],
+          ],
+        ),
     ]);
   }
 
@@ -2070,8 +2289,94 @@ class _AuditScreenState extends State<AuditScreen> {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 13,
+            fontWeight: bold ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      );
+}
+
+class _ActionCell extends StatelessWidget {
+  final String action;
+  final (IconData, Color) Function(String) meta;
+  const _ActionCell({required this.action, required this.meta});
+
+  @override
+  Widget build(BuildContext context) {
+    final m = meta(action);
+    return Tooltip(
+      message: action,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: m.$2.withValues(alpha: .15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(m.$1, size: 13, color: m.$2),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(6, 3, 8, 3),
+              decoration: BoxDecoration(
+                color: m.$2.withValues(alpha: context.p.isDark ? .18 : .09),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: m.$2.withValues(alpha: .3)),
+              ),
+              child: Text(
+                action,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: m.$2,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FingerprintCell extends StatelessWidget {
+  final String hash;
+  const _FingerprintCell({required this.hash});
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: 'بصمة العملية: $hash',
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(6, 3, 6, 3),
+          decoration: BoxDecoration(
+            color: context.p.surfaceAlt,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.p.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(CupertinoIcons.lock_fill, size: 10, color: kPrimary2),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  hash.substring(0, 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .5,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
