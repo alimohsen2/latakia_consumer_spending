@@ -1018,11 +1018,9 @@ class _TaxpayerListCardState extends State<_TaxpayerListCard> {
               width: (_hover || selected) ? 1.5 : .7),
           boxShadow: [
             BoxShadow(
-              color: _hover
-                  ? kGold.withValues(alpha: dark ? .30 : .38)
-                  : Colors.black.withValues(alpha: dark ? .12 : .035),
-              blurRadius: _hover ? 26 : 12,
-              offset: _hover ? const Offset(0, 12) : const Offset(0, 4),
+              color: Colors.black.withValues(alpha: dark ? .18 : .075),
+              blurRadius: _hover ? 22 : 12,
+              offset: _hover ? const Offset(0, 10) : const Offset(0, 4),
             ),
           ],
         ),
