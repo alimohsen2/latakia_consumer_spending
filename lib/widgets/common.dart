@@ -334,6 +334,8 @@ class GridTable extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.p.surfaceAlt
               .withValues(alpha: context.p.isDark ? .30 : .70),
+          borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(27)),
           border: Border(
             bottom: BorderSide(
                 color: kGold.withValues(alpha: .55), width: 1.3),
