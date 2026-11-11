@@ -1044,9 +1044,10 @@ class _UsersScreenState extends State<UsersScreen> {
             const SizedBox(height: 16),
             Text('الفلاتر',
                 style: TextStyle(
-                    color: context.p.text,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700)),
+                    color: kPrimary2,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -.1)),
             const SizedBox(height: 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -5682,22 +5683,22 @@ class _LabeledDrop extends StatelessWidget {
     final selectedValue =
         options.containsKey(value) ? value : options.keys.first;
     return SizedBox(
-      width: 172,
+      width: 160,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 2, bottom: 8),
+            padding: const EdgeInsetsDirectional.only(start: 2, bottom: 7),
             child: Text(label,
                 style: TextStyle(
                   color: context.p.text,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -.1,
                 )),
           ),
           Container(
-            height: 44,
+            height: 38,
             padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
             decoration: BoxDecoration(
               color: context.p.surfaceAlt,
@@ -5711,7 +5712,7 @@ class _LabeledDrop extends StatelessWidget {
                 isExpanded: true,
                 borderRadius: BorderRadius.circular(16),
                 icon: Icon(CupertinoIcons.chevron_down,
-                    size: 15, color: context.p.muted),
+                    size: 14, color: context.p.muted),
                 items: options.entries
                     .map((entry) {
                   final ic = optionIcons?[entry.key] ?? icon;
