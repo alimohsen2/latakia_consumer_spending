@@ -319,9 +319,26 @@ class GridTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = flex ?? List.filled(heads.length, 1);
+    final headerStyle = TextStyle(
+        fontWeight: FontWeight.w800,
+        fontSize: 12.5,
+        letterSpacing: .4,
+        color: context.p.isDark
+            ? const Color(0xFFBFE9DE)
+            : const Color(0xFF17574E));
     final table = Column(children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      // رأس الجدول: شريط كريمي بلمسة ذهبية أسفله — مقروء وفخم
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        decoration: BoxDecoration(
+          color: context.p.surfaceAlt
+              .withValues(alpha: context.p.isDark ? .30 : .70),
+          border: Border(
+            bottom: BorderSide(
+                color: kGold.withValues(alpha: .55), width: 1.3),
+          ),
+        ),
         child: Row(children: [
           for (var i = 0; i < heads.length; i++)
             Expanded(
@@ -330,13 +347,9 @@ class GridTable extends StatelessWidget {
                     textAlign: centerColumns.contains(i)
                         ? TextAlign.center
                         : TextAlign.start,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: context.p.muted)))
+                    style: headerStyle))
         ]),
       ),
-      const Divider(),
       if (rows.isEmpty)
         Padding(
             padding: const EdgeInsets.all(32),
@@ -368,7 +381,8 @@ class GridTable extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       child: minWidth == null
-          ? table
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(27), child: table)
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SizedBox(width: minWidth, child: table),
