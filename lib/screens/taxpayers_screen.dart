@@ -1342,6 +1342,52 @@ class TaxpayerProfileScreen extends StatefulWidget {
   State<TaxpayerProfileScreen> createState() => _TaxpayerProfileScreenState();
 }
 
+
+/// رأس قسم فخم داخل تبويبات صفحة المكلف.
+Widget _luxeHead(BuildContext context,
+    {required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color accent}) =>
+    Row(children: [
+      Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+            colors: [accent, accent.withValues(alpha: .55)],
+          ),
+          borderRadius: BorderRadius.circular(13),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 22, color: Colors.white),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -.2)),
+            const SizedBox(height: 2),
+            Text(subtitle,
+                style: TextStyle(color: context.p.muted, fontSize: 11.5)),
+          ],
+        ),
+      ),
+    ]);
+
 class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
   int tab = 0;
   static const tabs = [
@@ -1462,81 +1508,159 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
     Widget body;
     switch (tab) {
       case 1:
-        body = GridTable(
-          heads: const [
-            'الرقم',
-            'التاريخ',
-            'المخالفات',
-            'قيمة الضبط',
-            'الحالة'
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppCard(
+              child: _luxeHead(context,
+                  icon: CupertinoIcons.doc_text,
+                  title: 'محاضر ${t.name}',
+                  subtitle:
+                      '${reports.length} محضر — انقر أي محضر لفتحه',
+                  accent: kPrimary2),
+            ),
+            const SizedBox(height: 12),
+            GridTable(
+              heads: const [
+                'الرقم',
+                'التاريخ',
+                'المخالفات',
+                'قيمة الضبط',
+                'الحالة'
+              ],
+              flex: const [1, 1, 3, 1, 1],
+              rows: [
+                for (final r in reports)
+                  [
+                    InkWell(
+                        onTap: () => context.go('/reports/${r.id}'),
+                        child: cellText(r.serial, bold: true)),
+                    cellText(fmtDate(r.date)),
+                    cellText(r.items.map((e) => e.type).join('، ')),
+                    cellText(money(r.total)),
+                    StatusBadge(r.status)
+                  ]
+              ],
+              empty: 'لا توجد محاضر لهذا المكلف',
+            ),
           ],
-          flex: const [1, 1, 3, 1, 1],
-          rows: [
-            for (final r in reports)
-              [
-                InkWell(
-                    onTap: () => context.go('/reports/${r.id}'),
-                    child: cellText(r.serial, bold: true)),
-                cellText(fmtDate(r.date)),
-                cellText(r.items.map((e) => e.type).join('، ')),
-                cellText(money(r.total)),
-                StatusBadge(r.status)
-              ]
-          ],
-          empty: 'لا توجد محاضر لهذا المكلف',
         );
         break;
       case 2:
-        body = SalesPanel(taxpayer: t);
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppCard(
+              child: _luxeHead(context,
+                  icon: CupertinoIcons.chart_bar,
+                  title: 'مبيعات ${t.name}',
+                  subtitle: 'هذه السنة مقابل الماضية، ويومياً و5 سنوات',
+                  accent: kGold),
+            ),
+            const SizedBox(height: 12),
+            SalesPanel(taxpayer: t),
+          ],
+        );
         break;
       case 3:
         final now = DateTime.now();
         body = AppCard(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('الالتزام بتقديم البيانات الشهرية',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text('آخر ١٢ شهراً',
-                style: TextStyle(color: context.p.muted, fontSize: 12)),
-            const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (var i = 0; i < 12; i++)
-                Builder(builder: (_) {
-                  final ym = ymOf(DateTime(now.year, now.month - i, 1));
-                  final ok = st.submitted(t.id, ym);
-                  final c = badgeColors(ok ? 'مقدّم' : 'غير مقدّم');
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                        color: c.$1, borderRadius: BorderRadius.circular(20)),
-                    child: Text('$ym · ${ok ? "مقدّم" : "غير مقدّم"}',
-                        style: TextStyle(
-                            color: c.$2,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                  );
-                }),
-            ]),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _luxeHead(context,
+                  icon: CupertinoIcons.calendar_circle,
+                  title: 'التزام البيانات الشهرية',
+                  subtitle: 'آخر 12 شهراً — الأخضر وصلك في وقته والرمادي لم يصل',
+                  accent: kPrimary2),
+              const SizedBox(height: 18),
+              Wrap(spacing: 10, runSpacing: 10, children: [
+                for (var i = 0; i < 12; i++)
+                  Builder(builder: (_) {
+                    final ym = ymOf(DateTime(now.year, now.month - i, 1));
+                    final ok = st.submitted(t.id, ym);
+                    return Container(
+                      width: 88,
+                      height: 82,
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: ok
+                            ? const Color(0xFFEAF7EF)
+                            : context.p.surfaceAlt,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: ok
+                              ? const Color(0xFF34C759).withValues(alpha: .45)
+                              : context.p.border,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(ym,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: .2)),
+                          const SizedBox(height: 5),
+                          Icon(
+                            ok
+                                ? CupertinoIcons.checkmark_seal_fill
+                                : CupertinoIcons.exclamationmark_circle_fill,
+                            size: 17,
+                            color: ok
+                                ? const Color(0xFF34C759)
+                                : kRed,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            ok ? 'مقدّم' : 'غير مقدّم',
+                            style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: ok
+                                    ? const Color(0xFF1E7A3A)
+                                    : kRed),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ]),
+            ],
+          ),
         );
         break;
       case 4:
-        body = GridTable(
-          heads: const ['التاريخ', 'من', 'إلى', 'السبب', 'بواسطة'],
-          flex: const [2, 2, 2, 3, 2],
-          rows: [
-            for (final h in t.history.reversed)
-              [
-                cellText('${h['date']}'),
-                StatusBadge('${h['from']}'),
-                StatusBadge('${h['to']}'),
-                cellText('${h['reason']}'),
-                cellText('${h['by']}')
-              ]
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppCard(
+              child: _luxeHead(context,
+                  icon: CupertinoIcons.clock,
+                  title: 'سجل تغييرات الحالة',
+                  subtitle:
+                      'متى وكيف تغيّرت حالة هذا المكلف — الأحدث أولاً',
+                  accent: kGold),
+            ),
+            const SizedBox(height: 12),
+            GridTable(
+              heads: const ['التاريخ', 'من', 'إلى', 'السبب', 'بواسطة'],
+              flex: const [2, 2, 2, 3, 2],
+              rows: [
+                for (final h in t.history.reversed)
+                  [
+                    cellText('${h['date']}'),
+                    StatusBadge('${h['from']}'),
+                    StatusBadge('${h['to']}'),
+                    cellText('${h['reason']}'),
+                    cellText('${h['by']}')
+                  ]
+              ],
+              empty: 'لم تتغير حالة هذا المكلف',
+            ),
           ],
-          empty: 'لم تتغير حالة هذا المكلف',
         );
         break;
       default:
@@ -2106,7 +2230,7 @@ class _HeroStat extends StatelessWidget {
       );
 }
 
-/// شريط تبويبات فخم للمكلف — مسار أخضر داكن ومؤشر ذهبي متدرج.
+/// شريط تبويبات المكلف — بطاقة عاجية وإيزمارالد فخم مع أيقونة ذهبية عند التحديد.
 class _LuxTabs extends StatelessWidget {
   final List<String> items;
   final List<IconData> icons;
@@ -2121,47 +2245,53 @@ class _LuxTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = index;
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: AlignmentDirectional.topStart,
-              end: AlignmentDirectional.bottomEnd,
-              colors: [Color(0xFF152622), Color(0xFF0E1B18)],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: .09)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .30),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    final wideEnough = MediaQuery.of(context).size.width >= 820;
+    final bar = Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF8EF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE7DFCE)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                if (i != 0) const SizedBox(width: 6),
-                _LuxTab(
+        ],
+      ),
+      child: Row(
+        mainAxisSize: wideEnough ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i != 0) const SizedBox(width: 4),
+            if (wideEnough)
+              Expanded(
+                child: _LuxTab(
                   icon: icons[i],
                   label: items[i],
-                  selected: i == active,
+                  selected: i == index,
                   onTap: () => onChanged(i),
                 ),
-              ],
-            ],
-          ),
-        ),
+              )
+            else
+              _LuxTab(
+                icon: icons[i],
+                label: items[i],
+                selected: i == index,
+                onTap: () => onChanged(i),
+              ),
+          ],
+        ],
       ),
     );
+
+    return wideEnough
+        ? bar
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: bar,
+          );
   }
 }
 
@@ -2177,62 +2307,58 @@ class _LuxTab extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _deep = Color(0xFF123B36);
+  static const _ink = Color(0xFF3B3326);
+
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? Colors.transparent : Colors.transparent,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
         borderRadius: BorderRadius.circular(13),
+        splashColor: const Color(0xFFB8860B).withValues(alpha: .18),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            gradient: selected
-                ? const LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
-                  )
-                : null,
+            color: selected ? _deep : Colors.transparent,
             borderRadius: BorderRadius.circular(13),
+            border: selected
+                ? Border.all(color: const Color(0xFFB8860B), width: 1.2)
+                : null,
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: kGold.withValues(alpha: .45),
+                      color: _deep.withValues(alpha: .40),
                       blurRadius: 14,
-                      offset: const Offset(0, 4),
+                      offset: const Offset(0, 5),
                     ),
                   ]
                 : null,
-            border: Border.all(
-              color: selected
-                  ? Colors.white.withValues(alpha: .35)
-                  : Colors.transparent,
-              width: 1,
-            ),
           ),
-          child: Row(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 18,
+                size: 19,
                 color: selected
-                    ? const Color(0xFF3A2B12)
-                    : Colors.white.withValues(alpha: .65),
+                    ? const Color(0xFFE8C766)
+                    : const Color(0xFF8A7B4B),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 6),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 11.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected
-                      ? const Color(0xFF3A2B12)
-                      : Colors.white.withValues(alpha: .78),
+                  color: selected ? Colors.white : _ink,
                 ),
               ),
             ],
