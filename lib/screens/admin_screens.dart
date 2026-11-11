@@ -967,9 +967,16 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ),
               ),
-              Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
-                  (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
-              const SizedBox(width: 8),
+              Seg(
+                const ['بطاقات', 'جدول'],
+                view == 'cards' ? 0 : 1,
+                (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
+                icons: const [
+                  CupertinoIcons.square_grid_2x2_fill,
+                  CupertinoIcons.table,
+                ],
+              ),
+              const SizedBox(width: 14),
               Tooltip(
                 message: searchOpen ? 'طي البحث' : 'فتح البحث',
                 child: Material(
@@ -1003,51 +1010,54 @@ class _UsersScreenState extends State<UsersScreen> {
                     color: context.p.muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w600)),
-            const SizedBox(height: 14),
-            Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: context.p.surfaceAlt,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.p.border),
-              ),
-              child: TextField(
-                controller: query,
-                onChanged: (_) => setState(() {}),
-                style: const TextStyle(
-                    fontSize: 14.5, fontWeight: FontWeight.w500),
-                decoration: InputDecoration(
-                  hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsetsDirectional.fromSTEB(4, 0, 14, 0),
-                  prefixIcon: Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: kPrimary2.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(CupertinoIcons.search,
-                          size: 17, color: kPrimary2),
-                    ),
-                  ),
-                  suffixIcon: query.text.trim().isNotEmpty
-                      ? IconButton(
-                          tooltip: 'مسح البحث',
-                          onPressed: () => setState(() => query.clear()),
-                          icon: const Icon(CupertinoIcons.clear_circled_solid,
-                              size: 19),
-                        )
-                      : null,
+            const SizedBox(height: 12),
+            TextField(
+              controller: query,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              decoration: InputDecoration(
+                hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
+                hintStyle: TextStyle(
+                    color: context.p.muted, fontSize: 13.5),
+                filled: true,
+                fillColor: context.p.surfaceAlt,
+                contentPadding:
+                    const EdgeInsetsDirectional.fromSTEB(16, 14, 10, 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                      color: kPrimary2.withValues(alpha: .6), width: 1.5),
+                ),
+                prefixIcon: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 10, 0),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: kPrimary2.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(CupertinoIcons.search,
+                        size: 17, color: kPrimary2),
+                  ),
+                ),
+                suffixIcon: query.text.trim().isNotEmpty
+                    ? IconButton(
+                        tooltip: 'مسح البحث',
+                        onPressed: () => setState(() => query.clear()),
+                        icon: const Icon(CupertinoIcons.clear_circled_solid,
+                            size: 19),
+                      )
+                    : null,
               ),
             ),
             const SizedBox(height: 10),
@@ -1061,27 +1071,22 @@ class _UsersScreenState extends State<UsersScreen> {
                   border: Border.all(color: kPrimary2.withValues(alpha: .18)),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('عرض',
-                      style: TextStyle(
-                          color: context.p.muted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 6),
                   Text('${list.length}',
                       style: const TextStyle(
                           color: kPrimary2,
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.w800)),
-                  Text(' / ${st.users.length}',
-                      style: TextStyle(
-                          color: context.p.muted.withValues(alpha: .5),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 6),
-                  Text('حساب',
+                  Text(
+                    ' / ${st.users.length}',
+                    style: TextStyle(
+                        color: context.p.muted.withValues(alpha: .5),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  Text(' حساب',
                       style: TextStyle(
                           color: context.p.muted,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600)),
                 ]),
               ),
@@ -1116,14 +1121,15 @@ class _UsersScreenState extends State<UsersScreen> {
                     },
                     onChanged: (v) => setState(() => status = v)),
                 SizedBox(
-                  height: 48,
+                  height: 40,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       side: BorderSide(color: context.p.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
+                        borderRadius: BorderRadius.circular(11),
                       ),
+                      visualDensity: VisualDensity.compact,
                     ),
                     onPressed: query.text.trim().isNotEmpty ||
                             role.isNotEmpty ||
@@ -1136,8 +1142,9 @@ class _UsersScreenState extends State<UsersScreen> {
                               status = '';
                             })
                         : null,
-                    icon: const Icon(CupertinoIcons.refresh, size: 16),
-                    label: const Text('إعادة ضبط'),
+                    icon: const Icon(CupertinoIcons.refresh, size: 14),
+                    label: const Text('إعادة ضبط',
+                        style: TextStyle(fontSize: 12)),
                   ),
                 ),
               ],

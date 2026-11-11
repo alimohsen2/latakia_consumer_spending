@@ -453,7 +453,10 @@ class Seg extends StatelessWidget {
   final List<String> items;
   final int index;
   final void Function(int) onChanged;
-  const Seg(this.items, this.index, this.onChanged, {super.key});
+
+  /// إن مُرّرت أيقونات، تُعرض الأيقونات بدل النصوص (وضع التبديل الأنيق).
+  final List<IconData>? icons;
+  const Seg(this.items, this.index, this.onChanged, {super.key, this.icons});
   @override
   Widget build(BuildContext context) => Align(
         alignment: AlignmentDirectional.centerStart,
@@ -463,16 +466,28 @@ class Seg extends StatelessWidget {
             groupValue: index,
             backgroundColor: context.p.surfaceAlt,
             thumbColor: context.p.surface,
+            padding: icons != null ? const EdgeInsets.all(5) : const EdgeInsets.all(2),
             children: {
               for (var i = 0; i < items.length; i++)
                 i: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    child: Text(items[i],
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: context.p.text)))
+                    padding: icons != null
+                        ? const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 9)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                    child: icons != null
+                        ? Tooltip(
+                            message: items[i],
+                            child: Icon(icons![i],
+                                size: 22,
+                                color: i == index
+                                    ? kPrimary2
+                                    : context.p.muted))
+                        : Text(items[i],
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: context.p.text)))
             },
             onValueChanged: (v) {
               if (v != null) onChanged(v);
