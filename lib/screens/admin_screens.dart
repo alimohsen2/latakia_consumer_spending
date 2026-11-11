@@ -1144,16 +1144,6 @@ class _UsersScreenState extends State<UsersScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Seg(
-                    const ['بطاقات', 'جدول'],
-                    view == 'cards' ? 0 : 1,
-                    (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
-                    icons: const [
-                      CupertinoIcons.square_grid_2x2_fill,
-                      CupertinoIcons.table,
-                    ],
-                  ),
               ],
             ),
             ],
@@ -1166,6 +1156,54 @@ class _UsersScreenState extends State<UsersScreen> {
       ],
     ),
   ),
+      Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 2),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final heading = Row(children: [
+            Container(
+                width: 3,
+                height: 16,
+                decoration: const BoxDecoration(
+                    color: kPrimary2,
+                    borderRadius: BorderRadius.all(Radius.circular(2)))),
+            const SizedBox(width: 9),
+            const Text('قائمة المستخدمين',
+                style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                    letterSpacing: -.2)),
+          ]);
+          final toggle = Seg(
+            const ['بطاقات', 'جدول'],
+            view == 'cards' ? 0 : 1,
+            (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
+            icons: const [
+              CupertinoIcons.square_grid_2x2_fill,
+              CupertinoIcons.table,
+            ],
+          );
+          if (constraints.maxWidth < 560) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                heading,
+                const SizedBox(height: 8),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: toggle,
+                ),
+              ],
+            );
+          }
+          return Row(children: [
+            heading,
+            const SizedBox(width: 14),
+            Expanded(child: Container(height: .6, color: context.p.border)),
+            const SizedBox(width: 14),
+            toggle,
+          ]);
+        }),
+      ),
       if (view == 'table' && list.isNotEmpty)
         GridTable(
           onRowTap: (index) => context.go('/users/${list[index].id}/profile'),

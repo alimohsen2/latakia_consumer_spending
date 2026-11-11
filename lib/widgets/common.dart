@@ -321,8 +321,8 @@ class GridTable extends StatelessWidget {
     final f = flex ?? List.filled(heads.length, 1);
     final headerStyle = TextStyle(
         fontWeight: FontWeight.w800,
-        fontSize: 12.5,
-        letterSpacing: .4,
+        fontSize: 14.5,
+        letterSpacing: .5,
         color: context.p.isDark
             ? const Color(0xFFBFE9DE)
             : const Color(0xFF17574E));
