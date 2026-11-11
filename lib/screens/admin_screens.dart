@@ -1204,17 +1204,39 @@ class _UsersScreenState extends State<UsersScreen> {
         child: LayoutBuilder(builder: (context, constraints) {
           final heading = Row(children: [
             Container(
-                width: 3,
-                height: 16,
-                decoration: const BoxDecoration(
-                    color: kPrimary2,
-                    borderRadius: BorderRadius.all(Radius.circular(2)))),
-            const SizedBox(width: 9),
-            const Text('قائمة المستخدمين',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                    letterSpacing: -.2)),
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
+                  colors: [kPrimary2, Color(0xFF17574E)],
+                ),
+                borderRadius: BorderRadius.circular(11),
+                boxShadow: [
+                  BoxShadow(
+                    color: kPrimary2.withValues(alpha: .30),
+                    blurRadius: 7,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(CupertinoIcons.person_2_fill,
+                  size: 19, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('قائمة المستخدمين',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: -.2)),
+              Text('${list.length} حساب',
+                  style: TextStyle(
+                      color: context.p.muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600)),
+            ]),
           ]);
           final toggle = Seg(
             const ['بطاقات', 'جدول'],
@@ -1241,8 +1263,7 @@ class _UsersScreenState extends State<UsersScreen> {
           return Row(children: [
             heading,
             const SizedBox(width: 14),
-            Expanded(child: Container(height: .6, color: context.p.border)),
-            const SizedBox(width: 14),
+            const Spacer(),
             toggle,
           ]);
         }),
