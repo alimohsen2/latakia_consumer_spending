@@ -1066,27 +1066,31 @@ class _UsersScreenState extends State<UsersScreen> {
                           color: kPrimary2,
                           fontSize: 14,
                           fontWeight: FontWeight.w800)),
-                  Text(
-                    ' / ${st.users.length}',
-                    style: TextStyle(
-                        color: context.p.muted.withValues(alpha: .5),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  Text(' حساب',
+                  const SizedBox(width: 2),
+                  Text('/ ${st.users.length}',
                       style: TextStyle(
-                          color: context.p.muted,
-                          fontSize: 10,
+                          color: context.p.muted.withValues(alpha: .45),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Text('حساب',
+                      style: TextStyle(
+                          color: context.p.muted.withValues(alpha: .62),
+                          fontSize: 11,
                           fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              crossAxisAlignment: WrapCrossAlignment.end,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
                 _LabeledDrop(
                     label: 'الدور',
                     icon: CupertinoIcons.briefcase_fill,
@@ -1110,15 +1114,6 @@ class _UsersScreenState extends State<UsersScreen> {
                       'closed': 'مغلق نهائيًا',
                     },
                     onChanged: (v) => setState(() => status = v)),
-                Seg(
-                    const ['بطاقات', 'جدول'],
-                    view == 'cards' ? 0 : 1,
-                    (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
-                    icons: const [
-                      CupertinoIcons.square_grid_2x2_fill,
-                      CupertinoIcons.table,
-                    ],
-                  ),
                 SizedBox(
                   height: 32,
                   child: OutlinedButton.icon(
@@ -1146,6 +1141,19 @@ class _UsersScreenState extends State<UsersScreen> {
                         style: TextStyle(fontSize: 11)),
                   ),
                 ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Seg(
+                    const ['بطاقات', 'جدول'],
+                    view == 'cards' ? 0 : 1,
+                    (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
+                    icons: const [
+                      CupertinoIcons.square_grid_2x2_fill,
+                      CupertinoIcons.table,
+                    ],
+                  ),
               ],
             ),
             ],
