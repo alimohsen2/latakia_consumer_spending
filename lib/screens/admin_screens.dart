@@ -967,16 +967,6 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ),
               ),
-              Seg(
-                const ['بطاقات', 'جدول'],
-                view == 'cards' ? 0 : 1,
-                (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
-                icons: const [
-                  CupertinoIcons.square_grid_2x2_fill,
-                  CupertinoIcons.table,
-                ],
-              ),
-              const SizedBox(width: 14),
               Tooltip(
                 message: searchOpen ? 'طي البحث' : 'فتح البحث',
                 child: Material(
@@ -1120,14 +1110,23 @@ class _UsersScreenState extends State<UsersScreen> {
                       'closed': 'مغلق نهائيًا',
                     },
                     onChanged: (v) => setState(() => status = v)),
+                Seg(
+                    const ['بطاقات', 'جدول'],
+                    view == 'cards' ? 0 : 1,
+                    (i) => setState(() => view = i == 0 ? 'cards' : 'table'),
+                    icons: const [
+                      CupertinoIcons.square_grid_2x2_fill,
+                      CupertinoIcons.table,
+                    ],
+                  ),
                 SizedBox(
-                  height: 40,
+                  height: 32,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       side: BorderSide(color: context.p.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(11),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       visualDensity: VisualDensity.compact,
                     ),
@@ -1142,9 +1141,9 @@ class _UsersScreenState extends State<UsersScreen> {
                               status = '';
                             })
                         : null,
-                    icon: const Icon(CupertinoIcons.refresh, size: 14),
+                    icon: const Icon(CupertinoIcons.refresh, size: 13),
                     label: const Text('إعادة ضبط',
-                        style: TextStyle(fontSize: 12)),
+                        style: TextStyle(fontSize: 11)),
                   ),
                 ),
               ],
@@ -5596,7 +5595,7 @@ class _LabeledDrop extends StatelessWidget {
     final selectedValue =
         options.containsKey(value) ? value : options.keys.first;
     return SizedBox(
-      width: 188,
+      width: 160,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -5604,14 +5603,15 @@ class _LabeledDrop extends StatelessWidget {
             padding: const EdgeInsetsDirectional.only(start: 2, bottom: 7),
             child: Text(label,
                 style: TextStyle(
-                  color: context.p.muted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  color: context.p.text,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -.1,
                 )),
           ),
           Container(
-            height: 48,
-            padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
+            height: 38,
+            padding: const EdgeInsetsDirectional.only(start: 8, end: 6),
             decoration: BoxDecoration(
               color: context.p.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
@@ -5624,20 +5624,21 @@ class _LabeledDrop extends StatelessWidget {
                 isExpanded: true,
                 borderRadius: BorderRadius.circular(16),
                 icon: Icon(CupertinoIcons.chevron_down,
-                    size: 17, color: context.p.muted),
+                    size: 15, color: context.p.muted),
                 items: options.entries
                     .map((entry) => DropdownMenuItem(
                           value: entry.key,
                           child: Row(
                             children: [
                               Icon(icon,
-                                  size: 15,
+                                  size: 14,
                                   color: context.p.muted),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 7),
                               Flexible(
                                 child: Text(entry.value,
                                     maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12.5)),
                               ),
                             ],
                           ),

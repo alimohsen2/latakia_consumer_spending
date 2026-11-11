@@ -466,20 +466,19 @@ class Seg extends StatelessWidget {
             groupValue: index,
             backgroundColor: context.p.surfaceAlt,
             thumbColor: context.p.surface,
-            padding: icons != null ? const EdgeInsets.all(5) : const EdgeInsets.all(2),
             children: {
               for (var i = 0; i < items.length; i++)
                 i: Padding(
                     padding: icons != null
                         ? const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 9)
+                            horizontal: 13, vertical: 7)
                         : const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                     child: icons != null
                         ? Tooltip(
                             message: items[i],
                             child: Icon(icons![i],
-                                size: 22,
+                                size: 18,
                                 color: i == index
                                     ? kPrimary2
                                     : context.p.muted))
