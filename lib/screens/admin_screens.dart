@@ -959,7 +959,7 @@ class _UsersScreenState extends State<UsersScreen> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'البحث والفلاتر',
+                  'البحث',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -1041,32 +1041,13 @@ class _UsersScreenState extends State<UsersScreen> {
                     : null,
               ),
             ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: Container(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 7, 16, 7),
-                decoration: BoxDecoration(
-                  color: kPrimary2.withValues(alpha: .07),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: kPrimary2.withValues(alpha: .18)),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('${list.length}',
-                      style: const TextStyle(
-                          color: kPrimary2,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800)),
-                  const SizedBox(width: 6),
-                  Text('نتيجة',
-                      style: TextStyle(
-                          color: context.p.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            Text('الفلاتر',
+                style: TextStyle(
+                    color: context.p.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -1171,6 +1152,31 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 7, 16, 7),
+                decoration: BoxDecoration(
+                  color: kPrimary2.withValues(alpha: .07),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: kPrimary2.withValues(alpha: .18)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('${list.length}',
+                      style: const TextStyle(
+                          color: kPrimary2,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 6),
+                  Text('نتيجة',
+                      style: TextStyle(
+                          color: context.p.muted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                ]),
+              ),
             ),
             ],
           ),
