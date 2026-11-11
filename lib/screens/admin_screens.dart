@@ -537,6 +537,7 @@ class _UsersScreenState extends State<UsersScreen> {
   String role = '', div = '';
   String status = '';
   String view = 'table';
+  bool searchOpen = true;
   final query = TextEditingController();
 
   @override
@@ -968,58 +969,86 @@ class _UsersScreenState extends State<UsersScreen> {
               ),
               Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
                   (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: searchOpen ? 'طي البحث' : 'فتح البحث',
+                child: Material(
+                  color: context.p.surfaceAlt,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => setState(() => searchOpen = !searchOpen),
+                    child: AnimatedRotation(
+                      turns: searchOpen ? 0.5 : 1.0,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      child: const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Icon(CupertinoIcons.chevron_down, size: 19),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ]),
-            const SizedBox(height: 16),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
             Text('ابحث في الحسابات',
                 style: TextStyle(
                     color: context.p.muted,
                     fontSize: 12,
                     fontWeight: FontWeight.w600)),
-            const SizedBox(height: 7),
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsetsDirectional.only(start: 10, end: 6),
+              height: 48,
               decoration: BoxDecoration(
                 color: context.p.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: context.p.border),
               ),
-              child: Row(children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: kPrimary2.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(CupertinoIcons.search,
-                      size: 17, color: kPrimary2),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: query,
-                    onChanged: (_) => setState(() {}),
-                    style: const TextStyle(
-                        fontSize: 14.5, fontWeight: FontWeight.w500),
-                    decoration: const InputDecoration(
-                      hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      isDense: true,
+              child: TextField(
+                controller: query,
+                onChanged: (_) => setState(() {}),
+                style: const TextStyle(
+                    fontSize: 14.5, fontWeight: FontWeight.w500),
+                decoration: InputDecoration(
+                  hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsetsDirectional.fromSTEB(4, 0, 14, 0),
+                  prefixIcon: Padding(
+                    padding:
+                        const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: kPrimary2.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(CupertinoIcons.search,
+                          size: 17, color: kPrimary2),
                     ),
                   ),
+                  suffixIcon: query.text.trim().isNotEmpty
+                      ? IconButton(
+                          tooltip: 'مسح البحث',
+                          onPressed: () => setState(() => query.clear()),
+                          icon: const Icon(CupertinoIcons.clear_circled_solid,
+                              size: 19),
+                        )
+                      : null,
                 ),
-                if (query.text.trim().isNotEmpty)
-                  IconButton(
-                    tooltip: 'مسح البحث',
-                    onPressed: () => setState(() {
-                      query.clear();
-                    }),
-                    icon: const Icon(CupertinoIcons.clear_circled_solid,
-                        size: 17),
-                  ),
-              ]),
+              ),
             ),
             const SizedBox(height: 10),
             Align(
@@ -1113,10 +1142,16 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-          ],
+            ],
+          ),
+          crossFadeState: searchOpen
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 220),
         ),
-      ),
+      ],
+    ),
+  ),
       if (view == 'table' && list.isNotEmpty)
         GridTable(
           onRowTap: (index) => context.go('/users/${list[index].id}/profile'),
