@@ -937,14 +937,14 @@ class _UsersScreenState extends State<UsersScreen> {
         ],
       ),
       AppCard(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: AlignmentDirectional.topStart,
@@ -962,29 +962,21 @@ class _UsersScreenState extends State<UsersScreen> {
                   'البحث',
                   style: TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
                   ),
                 ),
               ),
               Tooltip(
                 message: searchOpen ? 'طي البحث' : 'فتح البحث',
-                child: Material(
-                  color: context.p.surfaceAlt,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => setState(() => searchOpen = !searchOpen),
-                    child: AnimatedRotation(
-                      turns: searchOpen ? 0.5 : 1.0,
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      child: const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Icon(CupertinoIcons.chevron_down, size: 19),
-                      ),
-                    ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => setState(() => searchOpen = !searchOpen),
+                  child: const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(CupertinoIcons.chevron_down,
+                        size: 20, color: Color(0xFF3E6B66)),
                   ),
                 ),
               ),
@@ -5742,7 +5734,7 @@ class _LabeledDrop extends StatelessWidget {
 }
 
 
-/// رأس قسم مميز: أيقونة مربعة صغيرة + عنوان بخط عريض.
+/// رأس قسم مميز — شريط زمرّدي رفيع بجانب العنوان.
 class _SectionHead extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -5752,21 +5744,19 @@ class _SectionHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          color: kPrimary2.withValues(alpha: .10),
-          borderRadius: BorderRadius.circular(8),
+        width: 4,
+        height: 16,
+        decoration: const BoxDecoration(
+          color: kPrimary2,
+          borderRadius: BorderRadius.all(Radius.circular(2)),
         ),
-        child: Icon(icon, size: 15, color: kPrimary2),
       ),
       const SizedBox(width: 8),
       Text(title,
           style: const TextStyle(
-              color: kPrimary2,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -.1)),
+              color: Color(0xFF17574E),
+              fontSize: 14,
+              fontWeight: FontWeight.w800)),
     ]);
   }
 }
