@@ -2015,7 +2015,18 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
           ),
         ),
       ),
-      Seg(tabs, tab, (i) => setState(() => tab = i)),
+      _LuxTabs(
+        items: tabs,
+        icons: const [
+          CupertinoIcons.square_grid_2x2_fill,
+          CupertinoIcons.doc_text,
+          CupertinoIcons.chart_bar,
+          CupertinoIcons.calendar_circle,
+          CupertinoIcons.clock,
+        ],
+        index: tab,
+        onChanged: (i) => setState(() => tab = i),
+      ),
       body,
     ]);
   }
@@ -2093,4 +2104,141 @@ class _HeroStat extends StatelessWidget {
           ),
         ]),
       );
+}
+
+/// شريط تبويبات فخم للمكلف — مسار أخضر داكن ومؤشر ذهبي متدرج.
+class _LuxTabs extends StatelessWidget {
+  final List<String> items;
+  final List<IconData> icons;
+  final int index;
+  final ValueChanged<int> onChanged;
+  const _LuxTabs({
+    required this.items,
+    required this.icons,
+    required this.index,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final active = index;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [Color(0xFF152622), Color(0xFF0E1B18)],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: .09)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .30),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i != 0) const SizedBox(width: 6),
+                _LuxTab(
+                  icon: icons[i],
+                  label: items[i],
+                  selected: i == active,
+                  onTap: () => onChanged(i),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LuxTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _LuxTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? Colors.transparent : Colors.transparent,
+      borderRadius: BorderRadius.circular(13),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(13),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? const LinearGradient(
+                    begin: AlignmentDirectional.topStart,
+                    end: AlignmentDirectional.bottomEnd,
+                    colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(13),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: kGold.withValues(alpha: .45),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+            border: Border.all(
+              color: selected
+                  ? Colors.white.withValues(alpha: .35)
+                  : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected
+                    ? const Color(0xFF3A2B12)
+                    : Colors.white.withValues(alpha: .65),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected
+                      ? const Color(0xFF3A2B12)
+                      : Colors.white.withValues(alpha: .78),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
