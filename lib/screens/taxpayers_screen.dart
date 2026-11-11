@@ -1395,43 +1395,10 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
     final st = context.watch<AppStore>();
     final t = st.tp(widget.id);
     if (t == null) return const Center(child: Text('المكلف غير موجود'));
-    final dark = context.p.isDark;
     final reports = st.reports.where((r) => r.taxpayerId == t.id).toList();
     final activeReports = reports.where((r) => r.status != 'ملغى').length;
     final totalFines = reports.fold<num>(0, (a, r) => a + r.total);
     final initial = t.name.trim().isEmpty ? 'م' : t.name.trim().substring(0, 1);
-
-    Widget metaChip(IconData icon, String text) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-          decoration: BoxDecoration(
-              color: dark
-                  ? Colors.white.withValues(alpha: .06)
-                  : const Color(0xFFF5F5F7),
-              borderRadius: BorderRadius.circular(20)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 12, color: context.p.muted),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: context.p.muted)),
-            ),
-          ]),
-        );
-
-    Widget goldTile(IconData icon, {double size = 50}) => Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: dark
-                ? Colors.white.withValues(alpha: .06)
-                : const Color(0xFFF6F1E7),
-            borderRadius: BorderRadius.circular(size * .28),
-            border: Border.all(color: kGold.withValues(alpha: .22), width: .6),
-          ),
-          child: Icon(icon, color: kGold, size: size * .46),
-        );
 
     Widget miniStat(String label, String value) => Expanded(
           child:
@@ -1450,20 +1417,45 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
       if (st.can('reports.create'))
         FilledButton.icon(
           onPressed: () => context.go('/reports/new?tp=${t.id}'),
-          icon: const Icon(CupertinoIcons.add, size: 16),
-          label: const Text('محضر جديد'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFE8C766),
+            foregroundColor: const Color(0xFF3A2B12),
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 13, 20, 13),
+            shape: const StadiumBorder(),
+            elevation: 2,
+            shadowColor: kGold.withValues(alpha: .5),
+          ),
+          icon: const Icon(CupertinoIcons.add, size: 18),
+          label: const Text('محضر جديد',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
         ),
       if (st.can('taxpayers.edit'))
         OutlinedButton.icon(
           onPressed: () => context.go('/taxpayers/${t.id}/edit'),
-          icon: const Icon(CupertinoIcons.pencil, size: 15),
-          label: const Text('تعديل البيانات'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: .92),
+            side: BorderSide(color: Colors.white.withValues(alpha: .28)),
+            backgroundColor: Colors.white.withValues(alpha: .08),
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 12, 18, 12),
+            shape: const StadiumBorder(),
+          ),
+          icon: const Icon(CupertinoIcons.pencil, size: 16),
+          label: const Text('تعديل البيانات',
+              style: TextStyle(fontSize: 13)),
         ),
       if (st.can('taxpayers.status'))
         OutlinedButton.icon(
           onPressed: () => _changeStatus(st, t),
-          icon: const Icon(CupertinoIcons.arrow_2_circlepath, size: 15),
-          label: const Text('تغيير الحالة'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFFFE2A6),
+            side: BorderSide(color: const Color(0xFFE8C766).withValues(alpha: .5)),
+            backgroundColor: const Color(0xFFE8C766).withValues(alpha: .12),
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 12, 18, 12),
+            shape: const StadiumBorder(),
+          ),
+          icon: const Icon(CupertinoIcons.arrow_2_circlepath, size: 16),
+          label: const Text('تغيير الحالة',
+              style: TextStyle(fontSize: 13)),
         ),
     ];
 
@@ -1553,16 +1545,27 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: kPrimary.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kGold.withValues(alpha: .45),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: const Icon(CupertinoIcons.briefcase,
-                    size: 19, color: kPrimary),
+                    size: 21, color: Color(0xFF3A2B12)),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1570,7 +1573,7 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
                     Text('بيانات المنشأة',
                         style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 15,
+                            fontSize: 15.5,
                             color: context.p.text)),
                     const SizedBox(height: 2),
                     Text('المعلومات الأساسية المسجّلة',
@@ -1615,16 +1618,26 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Container(
-                    width: 3,
-                    height: 15,
-                    decoration: BoxDecoration(
-                        color: kGold, borderRadius: BorderRadius.circular(2))),
-                const SizedBox(width: 8),
-                Text('ملخص سريع',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: context.p.text)),
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: kGold.withValues(alpha: .16),
+                    border: Border.all(color: kGold.withValues(alpha: .3)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(CupertinoIcons.doc_chart,
+                      size: 20, color: kGold),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('ملخص المحاضر والأداء',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: context.p.text)),
+                ),
               ]),
               const SizedBox(height: 16),
               Row(children: [
@@ -1699,161 +1712,385 @@ class _TaxpayerProfileScreenState extends State<TaxpayerProfileScreen> {
         current: t.name,
         fallbackLocation: '/taxpayers',
       ),
-      // البطاقة الرئيسية: هوية المكلف وأزرار العمل.
-      Container(
-        padding: const EdgeInsets.fromLTRB(26, 26, 26, 20),
+      // البطاقة الرئيسية الفاخرة: هوية المكلف وأزرار العمل.
+      DecoratedBox(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: dark
-                ? const [Color(0xFF16201E), Color(0xFF0F1615)]
-                : const [Color(0xFFFFFFFF), Color(0xFFF2F7F5)],
-          ),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: context.p.border, width: .6),
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? .28 : .05),
-                blurRadius: 24,
-                offset: const Offset(0, 8)),
+              color: const Color(0xFF0C2420).withValues(alpha: .55),
+              blurRadius: 30,
+              offset: const Offset(0, 14),
+            ),
           ],
         ),
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 76,
-              height: 76,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(26, 24, 26, 22),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [Color(0xFF123B36), Color(0xFF0C2420)],
+              ),
+            ),
+            child: Stack(
+              children: [
+                // توهّجات زخرفية داخل الحدود
+                PositionedDirectional(
+                  top: -40,
+                  end: -30,
+                  child: _glowDecoration(kGold.withValues(alpha: .22), 150),
+                ),
+                PositionedDirectional(
+                  bottom: -50,
+                  start: -40,
+                  child: _glowDecoration(const Color(0xFF2E8C7E).withValues(alpha: .30), 170),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LayoutBuilder(builder: (c, cons) {
+                      final wide = cons.maxWidth >= 640;
+                      final avatar = Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            width: 92,
+                            height: 92,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
+                              ),
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: .4),
+                                  width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kGold.withValues(alpha: .45),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(initial,
+                                  style: const TextStyle(
+                                      color: Color(0xFF3A2B12),
+                                      fontSize: 38,
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                          ),
+                          Positioned(
+                            right: -4,
+                            bottom: -4,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: t.status == 'فعال'
+                                    ? const Color(0xFF34C759)
+                                    : t.status == 'متوقف مؤقتاً'
+                                        ? kGold
+                                        : kRed,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: const Color(0xFF0C2420), width: 3.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                      final identity = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 10,
+                            runSpacing: 6,
+                            children: [
+                              Text(
+                                t.name.isEmpty ? 'منشأة بلا اسم' : t.name,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 25,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -.4),
+                              ),
+                              StatusBadge(t.status),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(spacing: 8, runSpacing: 8, children: [
+                            _heroChip(CupertinoIcons.number,
+                                'الرقم الضريبي ${t.taxNo}'),
+                            _heroChip(CupertinoIcons.tag, t.category),
+                            if (t.owner.isNotEmpty)
+                              _heroChip(CupertinoIcons.person_fill, t.owner),
+                            if (t.address.isNotEmpty)
+                              _heroChip(CupertinoIcons.location_fill, t.address),
+                          ]),
+                        ],
+                      );
+                      if (!wide) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(child: avatar),
+                            const SizedBox(height: 16),
+                            identity,
+                          ],
+                        );
+                      }
+                      return Row(children: [
+                        avatar,
+                        const SizedBox(width: 22),
+                        Expanded(child: identity),
+                      ]);
+                    }),
+                    const SizedBox(height: 20),
+                    Divider(
+                        color: Colors.white.withValues(alpha: .14), height: 1),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _HeroStat(
+                            icon: CupertinoIcons.doc_text,
+                            label: 'المحاضر',
+                            value: '${reports.length}'),
+                        _HeroStat(
+                            icon: CupertinoIcons.clock,
+                            label: 'قيد الإجراء',
+                            value:
+                                '${reports.where((r) => r.status == 'مسودة' || r.status == 'بانتظار رئيس الشعبة' || r.status == 'بانتظار رئيس الدائرة').length}'),
+                        _HeroStat(
+                            icon: CupertinoIcons.money_dollar,
+                            label: 'إجمالي الضبوط',
+                            value: money(totalFines)),
+                        _HeroStat(
+                            icon: CupertinoIcons.checkmark_seal,
+                            label: 'المخالفات السارية',
+                            value: '$activeReports'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(spacing: 10, runSpacing: 10, children: actions),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // أضبارة المكلف: بطاقة ذهبية فاخرة مستقلّة.
+      DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: kGold.withValues(alpha: .30),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [Color(0xFFFDF7E7), Color(0xFFF6ECD6)],
+              ),
+            ),
+            child: LayoutBuilder(builder: (c, cons) {
+              final label = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      const Text('أضبارة المكلف',
+                          style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF4A3410))),
+                      if (t.attachments.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: kGold.withValues(alpha: .22),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('${t.attachments.length} صورة',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF7A5B12))),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'السجل التجاري، الهوية، الإجازة، عقد الإيجار وبقية الأوراق المصوّرة',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Color(0xFF6F5A1E), fontSize: 12, height: 1.4),
+                  ),
+                ],
+              );
+              final button = FilledButton.icon(
+                onPressed: () => context.go('/taxpayers/${t.id}/file'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: kGold,
+                  foregroundColor: const Color(0xFF3A2B12),
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 14),
+                  shape: const StadiumBorder(),
+                  elevation: 2,
+                  shadowColor: kGold.withValues(alpha: .5),
+                ),
+                icon: const Icon(CupertinoIcons.folder, size: 19),
+                label: const Text('فتح الأضبارة',
+                    style: TextStyle(
+                        fontSize: 13.5, fontWeight: FontWeight.w800)),
+              );
+              final tile = Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF2E8C7E), Color(0xFF17574E)]),
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                      color: kPrimary.withValues(alpha: .28),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6))
-                ],
-              ),
-              child: Text(initial,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
+                    colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kGold.withValues(alpha: .55),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: const Icon(CupertinoIcons.folder,
+                    size: 30, color: Color(0xFF3A2B12)),
+              );
+              if (cons.maxWidth < 620) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 10,
-                        runSpacing: 6,
-                        children: [
-                          Text(t.name,
-                              style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -.3)),
-                          StatusBadge(t.status),
-                        ]),
-                    const SizedBox(height: 7),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      metaChip(
-                          CupertinoIcons.number, 'الرقم الضريبي ${t.taxNo}'),
-                      metaChip(CupertinoIcons.tag, t.category),
-                      if (t.address.isNotEmpty)
-                        metaChip(CupertinoIcons.location, t.address),
+                    Row(children: [
+                      tile,
+                      const SizedBox(width: 14),
+                      Expanded(child: label),
                     ]),
-                  ]),
-            ),
-          ]),
-          const SizedBox(height: 20),
-          Divider(color: context.p.border),
-          const SizedBox(height: 14),
-          Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                ...actions,
-                const SizedBox(width: 4),
-                metaChip(CupertinoIcons.doc_text, '${reports.length} محضر'),
-              ]),
-        ]),
-      ),
-      // أضبارة المكلف: زر مستقل أسفل البطاقة الرئيسية كما هو مطلوب.
-      LayoutBuilder(builder: (c, cons) {
-        final label =
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            const Text('أضبارة المكلف',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            if (t.attachments.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
-                decoration: BoxDecoration(
-                    color: kGold.withValues(alpha: .14),
-                    borderRadius: BorderRadius.circular(20)),
-                child: Text('${t.attachments.length} صورة',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: kGold)),
-              ),
-            ],
-          ]),
-          const SizedBox(height: 3),
-          Text(
-              'السجل التجاري، الهوية، الإجازة، عقد الإيجار، وبقية الأوراق المصوّرة',
-              style: TextStyle(color: context.p.muted, fontSize: 12)),
-        ]);
-        final button = FilledButton.icon(
-          onPressed: () => context.go('/taxpayers/${t.id}/file'),
-          icon: const Icon(CupertinoIcons.folder, size: 16),
-          label: const Text('فتح الأضبارة'),
-        );
-        return Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: context.p.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: context.p.border, width: .6),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? .22 : .04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 5))
-            ],
+                    const SizedBox(height: 14),
+                    Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: button),
+                  ],
+                );
+              }
+              return Row(children: [
+                tile,
+                const SizedBox(width: 14),
+                Expanded(child: label),
+                const SizedBox(width: 12),
+                button,
+              ]);
+            }),
           ),
-          child: cons.maxWidth < 620
-              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    goldTile(CupertinoIcons.folder),
-                    const SizedBox(width: 14),
-                    Expanded(child: label)
-                  ]),
-                  const SizedBox(height: 14),
-                  Align(
-                      alignment: AlignmentDirectional.centerEnd, child: button),
-                ])
-              : Row(children: [
-                  goldTile(CupertinoIcons.folder),
-                  const SizedBox(width: 14),
-                  Expanded(child: label),
-                  const SizedBox(width: 12),
-                  button,
-                ]),
-        );
-      }),
+        ),
+      ),
       Seg(tabs, tab, (i) => setState(() => tab = i)),
       body,
     ]);
   }
+}
+
+/// توهّج دائري للزخرفة في بطاقات المكلف الرئيسية.
+Widget _glowDecoration(Color color, double size) => DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+        ),
+      ),
+      child: SizedBox(width: size, height: size),
+    );
+
+/// شريحة زجاجية داكنة في رأس صفحة المكلف.
+Widget _heroChip(IconData icon, String text) => Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 5, 12, 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: .18)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: Colors.white.withValues(alpha: .85)),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: Colors.white.withValues(alpha: .88))),
+        ),
+      ]),
+    );
+
+/// إحصائية صغيرة داخل رأس صفحة المكلف (زجاجية).
+class _HeroStat extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  const _HeroStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(13, 9, 13, 9),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: .14)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 17, color: const Color(0xFFE8C766)),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: .62),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(height: 2),
+              Text(value,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800)),
+            ],
+          ),
+        ]),
+      );
 }
