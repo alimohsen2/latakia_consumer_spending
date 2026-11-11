@@ -380,13 +380,15 @@ class GridTable extends StatelessWidget {
 
     return AppCard(
       padding: EdgeInsets.zero,
-      child: minWidth == null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(27), child: table)
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: minWidth, child: table),
-            ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(27),
+        child: minWidth == null
+            ? table
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: minWidth, child: table),
+              ),
+      ),
     );
   }
 }
