@@ -1024,11 +1024,38 @@ class _UsersScreenState extends State<UsersScreen> {
             const SizedBox(height: 10),
             Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text('${list.length} نتيجة',
-                  style: const TextStyle(
-                      color: kPrimary2,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+              child: Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 7, 16, 7),
+                decoration: BoxDecoration(
+                  color: kPrimary2.withValues(alpha: .07),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: kPrimary2.withValues(alpha: .18)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('عرض',
+                      style: TextStyle(
+                          color: context.p.muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 6),
+                  Text('${list.length}',
+                      style: const TextStyle(
+                          color: kPrimary2,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800)),
+                  Text(' / ${st.users.length}',
+                      style: TextStyle(
+                          color: context.p.muted.withValues(alpha: .5),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 6),
+                  Text('حساب',
+                      style: TextStyle(
+                          color: context.p.muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                ]),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -1087,13 +1114,6 @@ class _UsersScreenState extends State<UsersScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                'المعروض: ${list.length} من أصل ${st.users.length} حساب · فعالة: $activeCount · معطلة: $disabledCount · مغلقة: $closedCount',
-                style: TextStyle(color: context.p.muted, fontSize: 12),
-              ),
-            ),
           ],
         ),
       ),

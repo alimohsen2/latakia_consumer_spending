@@ -289,7 +289,7 @@ void main() {
     expect(find.textContaining('اسم صاحب الدور'), findsOneWidget);
     expect(find.text('مدير النظام'), findsNothing);
     expect(find.text('مستخدم مكتبي'), findsNothing);
-    expect(find.textContaining('من أصل 11'), findsOneWidget);
+    expect(find.textContaining('/ 11'), findsOneWidget);
 
     await tester.tap(find.byTooltip('تفاصيل وسجل الحساب').first);
     await tester.pumpAndSettle();
