@@ -937,14 +937,14 @@ class _UsersScreenState extends State<UsersScreen> {
         ],
       ),
       AppCard(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: AlignmentDirectional.topStart,
@@ -961,7 +961,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 child: Text(
                   'البحث',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
                   ),
@@ -994,21 +994,21 @@ class _UsersScreenState extends State<UsersScreen> {
               secondChild: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
             Text('ابحث في الحسابات',
                 style: TextStyle(
-                    color: context.p.muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+                    color: context.p.text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
             TextField(
               controller: query,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               decoration: InputDecoration(
                 hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه',
                 hintStyle: TextStyle(
-                    color: context.p.muted, fontSize: 13.5),
+                    color: context.p.muted, fontSize: 13),
                 filled: true,
                 fillColor: context.p.surfaceAlt,
                 contentPadding:
@@ -1029,7 +1029,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 prefixIcon: Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
                   child: const Icon(CupertinoIcons.search,
-                      size: 21, color: kPrimary2),
+                      size: 22, color: kPrimary2),
                 ),
                 suffixIcon: query.text.trim().isNotEmpty
                     ? IconButton(
@@ -1041,20 +1041,20 @@ class _UsersScreenState extends State<UsersScreen> {
                     : null,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Text('الفلاتر',
                 style: TextStyle(
-                    color: context.p.muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+                    color: context.p.text,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
+                    spacing: 12,
+                    runSpacing: 12,
                     crossAxisAlignment: WrapCrossAlignment.end,
                     children: [
                 _LabeledDrop(
@@ -1122,13 +1122,13 @@ class _UsersScreenState extends State<UsersScreen> {
                     },
                     onChanged: (v) => setState(() => status = v)),
                 SizedBox(
-                  height: 32,
+                  height: 36,
                   child: OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       side: BorderSide(color: context.p.border),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       visualDensity: VisualDensity.compact,
                     ),
@@ -1143,9 +1143,10 @@ class _UsersScreenState extends State<UsersScreen> {
                               status = '';
                             })
                         : null,
-                    icon: const Icon(CupertinoIcons.refresh, size: 13),
+                    icon: const Icon(CupertinoIcons.refresh, size: 15),
                     label: const Text('إعادة ضبط',
-                        style: TextStyle(fontSize: 11)),
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w700)),
                   ),
                 ),
                     ],
@@ -1153,11 +1154,11 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: Container(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 7, 16, 7),
+                padding: const EdgeInsetsDirectional.fromSTEB(18, 8, 18, 8),
                 decoration: BoxDecoration(
                   color: kPrimary2.withValues(alpha: .07),
                   borderRadius: BorderRadius.circular(22),
@@ -5681,23 +5682,23 @@ class _LabeledDrop extends StatelessWidget {
     final selectedValue =
         options.containsKey(value) ? value : options.keys.first;
     return SizedBox(
-      width: 160,
+      width: 172,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsetsDirectional.only(start: 2, bottom: 7),
+            padding: const EdgeInsetsDirectional.only(start: 2, bottom: 8),
             child: Text(label,
                 style: TextStyle(
                   color: context.p.text,
-                  fontSize: 13.5,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -.1,
                 )),
           ),
           Container(
-            height: 38,
-            padding: const EdgeInsetsDirectional.only(start: 8, end: 6),
+            height: 44,
+            padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
             decoration: BoxDecoration(
               color: context.p.surfaceAlt,
               borderRadius: BorderRadius.circular(16),
