@@ -1270,6 +1270,7 @@ class _UsersScreenState extends State<UsersScreen> {
       ),
       if (view == 'table' && list.isNotEmpty)
         GridTable(
+          minWidth: 1240,
           onRowTap: (index) => context.go('/users/${list[index].id}/profile'),
           centerColumns: const {0, 1, 10, 11},
           heads: const [
