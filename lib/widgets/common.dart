@@ -335,7 +335,7 @@ class GridTable extends StatelessWidget {
           color: context.p.surfaceAlt
               .withValues(alpha: context.p.isDark ? .30 : .70),
           borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(27)),
+              top: Radius.circular(28)),
           border: Border(
             bottom: BorderSide(
                 color: kGold.withValues(alpha: .55), width: 1.3),
@@ -383,7 +383,7 @@ class GridTable extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
+        borderRadius: BorderRadius.circular(28),
         child: minWidth == null
             ? table
             : SingleChildScrollView(
