@@ -995,11 +995,9 @@ class _UsersScreenState extends State<UsersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 18),
-            Text('ابحث في الحسابات',
-                style: TextStyle(
-                    color: context.p.text,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700)),
+            const _SectionHead(
+                icon: CupertinoIcons.search,
+                title: 'ابحث في الحسابات'),
             const SizedBox(height: 12),
             TextField(
               controller: query,
@@ -1041,13 +1039,10 @@ class _UsersScreenState extends State<UsersScreen> {
                     : null,
               ),
             ),
-            const SizedBox(height: 16),
-            Text('الفلاتر',
-                style: TextStyle(
-                    color: kPrimary2,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -.1)),
+            const SizedBox(height: 18),
+            const _SectionHead(
+                icon: CupertinoIcons.line_horizontal_3_decrease,
+                title: 'الفلاتر'),
             const SizedBox(height: 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -5746,3 +5741,32 @@ class _LabeledDrop extends StatelessWidget {
   }
 }
 
+
+/// رأس قسم مميز: أيقونة مربعة صغيرة + عنوان بخط عريض.
+class _SectionHead extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  const _SectionHead({required this.icon, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: kPrimary2.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 15, color: kPrimary2),
+      ),
+      const SizedBox(width: 8),
+      Text(title,
+          style: const TextStyle(
+              color: kPrimary2,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -.1)),
+    ]);
+  }
+}
