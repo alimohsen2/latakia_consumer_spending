@@ -943,26 +943,26 @@ class _UsersScreenState extends State<UsersScreen> {
           children: [
             Row(children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: AlignmentDirectional.topStart,
                     end: AlignmentDirectional.bottomEnd,
                     colors: [kPrimary2, Color(0xFF17574E)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(CupertinoIcons.search,
-                    size: 19, color: Colors.white),
+                    size: 16, color: Colors.white),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'البحث',
+                  'البحث والفلاتر',
                   style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -1109,43 +1109,65 @@ class _UsersScreenState extends State<UsersScreen> {
                       'closed': kRed,
                     },
                     onChanged: (v) => setState(() => status = v)),
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      side: BorderSide(color: context.p.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: query.text.trim().isNotEmpty ||
-                            role.isNotEmpty ||
-                            div.isNotEmpty ||
-                            status.isNotEmpty
-                        ? () => setState(() {
-                              query.clear();
-                              role = '';
-                              div = '';
-                              status = '';
-                            })
-                        : null,
-                    icon: const Icon(CupertinoIcons.refresh, size: 15),
-                    label: const Text('إعادة ضبط',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w700)),
-                  ),
-                ),
                     ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: Container(
+            Row(children: [
+              // زر إعادة تعيين — بسيط ونظيف بدون حدود
+              Material(
+                color: (query.text.trim().isNotEmpty ||
+                        role.isNotEmpty ||
+                        div.isNotEmpty ||
+                        status.isNotEmpty)
+                    ? kPrimary2.withValues(alpha: .09)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: (query.text.trim().isNotEmpty ||
+                          role.isNotEmpty ||
+                          div.isNotEmpty ||
+                          status.isNotEmpty)
+                      ? () => setState(() {
+                            query.clear();
+                            role = '';
+                            div = '';
+                            status = '';
+                          })
+                      : null,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(
+                        CupertinoIcons.arrow_counterclockwise_circle_fill,
+                        size: 16,
+                        color: (query.text.trim().isNotEmpty ||
+                                role.isNotEmpty ||
+                                div.isNotEmpty ||
+                                status.isNotEmpty)
+                            ? kPrimary2
+                            : context.p.muted.withValues(alpha: .5),
+                      ),
+                      const SizedBox(width: 6),
+                      Text('إعادة ضبط',
+                          style: TextStyle(
+                              color: (query.text.trim().isNotEmpty ||
+                                      role.isNotEmpty ||
+                                      div.isNotEmpty ||
+                                      status.isNotEmpty)
+                                  ? kPrimary2
+                                  : context.p.muted.withValues(alpha: .5),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Container(
                 padding: const EdgeInsetsDirectional.fromSTEB(18, 8, 18, 8),
                 decoration: BoxDecoration(
                   color: kPrimary2.withValues(alpha: .07),
@@ -1166,7 +1188,7 @@ class _UsersScreenState extends State<UsersScreen> {
                           fontWeight: FontWeight.w600)),
                 ]),
               ),
-            ),
+            ]),
             ],
           ),
           crossFadeState: searchOpen
