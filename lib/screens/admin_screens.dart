@@ -969,79 +969,120 @@ class _UsersScreenState extends State<UsersScreen> {
               Seg(const ['بطاقات', 'جدول'], view == 'cards' ? 0 : 1,
                   (i) => setState(() => view = i == 0 ? 'cards' : 'table')),
             ]),
-            const SizedBox(height: 14),
-            TextField(
-              controller: query,
-              onChanged: (_) => setState(() {}),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+            const SizedBox(height: 16),
+            Text('ابحث في الحسابات',
+                style: TextStyle(
+                    color: context.p.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 7),
+            Container(
+              padding: const EdgeInsetsDirectional.only(start: 10, end: 6),
+              decoration: BoxDecoration(
+                color: context.p.surfaceAlt,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.p.border),
               ),
-              decoration: InputDecoration(
-                hintText: 'ابحث باسم المستخدم أو اسمه الكامل…',
-                prefixIcon: const Icon(CupertinoIcons.search,
-                    size: 20),
-                suffixIcon: query.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(CupertinoIcons.xmark_circle_fill,
-                            size: 19),
-                        onPressed: () {
-                          query.clear();
-                          setState(() {});
-                        },
-                      ),
-                filled: true,
-                fillColor: context.p.surfaceAlt,
-                contentPadding:
-                    const EdgeInsetsDirectional.fromSTEB(16, 17, 16, 17),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
+              child: Row(children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: kPrimary2.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(CupertinoIcons.search,
+                      size: 17, color: kPrimary2),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide(
-                    color: kPrimary2.withValues(alpha: .6),
-                    width: 1.5,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: query,
+                    onChanged: (_) => setState(() {}),
+                    style: const TextStyle(
+                        fontSize: 14.5, fontWeight: FontWeight.w500),
+                    decoration: const InputDecoration(
+                      hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      isDense: true,
+                    ),
                   ),
                 ),
-              ),
+                if (query.text.trim().isNotEmpty)
+                  IconButton(
+                    tooltip: 'مسح البحث',
+                    onPressed: () => setState(() {
+                      query.clear();
+                    }),
+                    icon: const Icon(CupertinoIcons.clear_circled_solid,
+                        size: 17),
+                  ),
+              ]),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text('${list.length} نتيجة',
+                  style: const TextStyle(
+                      color: kPrimary2,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
             ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
               runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.end,
               children: [
-                _IconDropdown(
-                  icon: CupertinoIcons.briefcase_fill,
-                  label: 'الدور',
-                  value: role,
-                  options: {'': 'الكل', ...kRoles},
-                  onChanged: (v) => setState(() => role = v),
-                ),
-                _IconDropdown(
-                  icon: CupertinoIcons.building_2_fill,
-                  label: 'الشعبة',
-                  value: div,
-                  options: {'': 'الكل', ...kDivisionNames},
-                  onChanged: (v) => setState(() => div = v),
-                ),
-                _IconDropdown(
-                  icon: CupertinoIcons.lock_fill,
-                  label: 'الحالة',
-                  value: status,
-                  options: const {
-                    '': 'كل الحالات',
-                    'active': 'فعال',
-                    'disabled': 'معطل مؤقتًا',
-                    'closed': 'مغلق نهائيًا',
-                  },
-                  onChanged: (v) => setState(() => status = v),
+                _LabeledDrop(
+                    label: 'الدور',
+                    icon: CupertinoIcons.briefcase_fill,
+                    value: role,
+                    options: const {'': 'الكل', ...kRoles},
+                    onChanged: (v) => setState(() => role = v)),
+                _LabeledDrop(
+                    label: 'الشعبة',
+                    icon: CupertinoIcons.building_2_fill,
+                    value: div,
+                    options: const {'': 'الكل', ...kDivisionNames},
+                    onChanged: (v) => setState(() => div = v)),
+                _LabeledDrop(
+                    label: 'الحالة',
+                    icon: CupertinoIcons.lock_fill,
+                    value: status,
+                    options: const {
+                      '': 'كل الحالات',
+                      'active': 'فعال',
+                      'disabled': 'معطل مؤقتًا',
+                      'closed': 'مغلق نهائيًا',
+                    },
+                    onChanged: (v) => setState(() => status = v)),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      side: BorderSide(color: context.p.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    onPressed: query.text.trim().isNotEmpty ||
+                            role.isNotEmpty ||
+                            div.isNotEmpty ||
+                            status.isNotEmpty
+                        ? () => setState(() {
+                              query.clear();
+                              role = '';
+                              div = '';
+                              status = '';
+                            })
+                        : null,
+                    icon: const Icon(CupertinoIcons.refresh, size: 16),
+                    label: const Text('إعادة ضبط'),
+                  ),
                 ),
               ],
             ),
@@ -5472,3 +5513,83 @@ class _RoleIcon extends StatelessWidget {
     );
   }
 }
+
+/// قائمة منسدلة مدعومة بالتسمية فوقها — مثل لوحة المكلفين.
+class _LabeledDrop extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final String value;
+  final Map<String, String> options;
+  final void Function(String) onChanged;
+  const _LabeledDrop({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedValue =
+        options.containsKey(value) ? value : options.keys.first;
+    return SizedBox(
+      width: 188,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 2, bottom: 7),
+            child: Text(label,
+                style: TextStyle(
+                  color: context.p.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                )),
+          ),
+          Container(
+            height: 48,
+            padding: const EdgeInsetsDirectional.only(start: 10, end: 8),
+            decoration: BoxDecoration(
+              color: context.p.surfaceAlt,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.p.border),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedValue,
+                isDense: true,
+                isExpanded: true,
+                borderRadius: BorderRadius.circular(16),
+                icon: Icon(CupertinoIcons.chevron_down,
+                    size: 17, color: context.p.muted),
+                items: options.entries
+                    .map((entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Row(
+                            children: [
+                              Icon(icon,
+                                  size: 15,
+                                  color: context.p.muted),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(entry.value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (next) {
+                  if (next != null) onChanged(next);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
