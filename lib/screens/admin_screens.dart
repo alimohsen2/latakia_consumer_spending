@@ -1006,7 +1006,7 @@ class _UsersScreenState extends State<UsersScreen> {
               onChanged: (_) => setState(() {}),
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
-                hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه…',
+                hintText: 'ابحث باسم المستخدم أو اسمه الكامل أو حسابه',
                 hintStyle: TextStyle(
                     color: context.p.muted, fontSize: 13.5),
                 filled: true,
@@ -1027,18 +1027,9 @@ class _UsersScreenState extends State<UsersScreen> {
                       color: kPrimary2.withValues(alpha: .6), width: 1.5),
                 ),
                 prefixIcon: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 10, 0),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: kPrimary2.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(CupertinoIcons.search,
-                        size: 17, color: kPrimary2),
-                  ),
+                  padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
+                  child: const Icon(CupertinoIcons.search,
+                      size: 21, color: kPrimary2),
                 ),
                 suffixIcon: query.text.trim().isNotEmpty
                     ? IconButton(
@@ -1090,12 +1081,41 @@ class _UsersScreenState extends State<UsersScreen> {
                     icon: CupertinoIcons.briefcase_fill,
                     value: role,
                     options: const {'': 'الكل', ...kRoles},
+                    optionIcons: {
+                      '': CupertinoIcons.square_grid_2x2_fill,
+                      ..._roleIcons,
+                    },
+                    optionColors: {
+                      '': kPrimary2,
+                      'sysadmin': kGold,
+                      'financeDirector': kGold,
+                      'sectionHead': kPrimary2,
+                      'infoSectionHead': kPrimary2,
+                      'deptHead': kPrimary2,
+                      'fieldHead': const Color(0xFF7FB8FF),
+                      'officeHead': const Color(0xFF9FE3C0),
+                      'archiveHead': const Color(0xFFFFD27A),
+                      'monitor': const Color(0xFFFFA99B),
+                      'user': context.p.muted,
+                    },
                     onChanged: (v) => setState(() => role = v)),
                 _LabeledDrop(
                     label: 'الشعبة',
                     icon: CupertinoIcons.building_2_fill,
                     value: div,
                     options: const {'': 'الكل', ...kDivisionNames},
+                    optionIcons: const {
+                      '': CupertinoIcons.square_grid_2x2_fill,
+                      'field': CupertinoIcons.map_fill,
+                      'office': CupertinoIcons.desktopcomputer,
+                      'archive': CupertinoIcons.archivebox_fill,
+                    },
+                    optionColors: const {
+                      '': kPrimary2,
+                      'field': Color(0xFF7FB8FF),
+                      'office': Color(0xFF9FE3C0),
+                      'archive': Color(0xFFFFD27A),
+                    },
                     onChanged: (v) => setState(() => div = v)),
                 _LabeledDrop(
                     label: 'الحالة',
@@ -1106,6 +1126,18 @@ class _UsersScreenState extends State<UsersScreen> {
                       'active': 'فعال',
                       'disabled': 'معطل مؤقتًا',
                       'closed': 'مغلق نهائيًا',
+                    },
+                    optionIcons: const {
+                      '': CupertinoIcons.square_grid_2x2_fill,
+                      'active': CupertinoIcons.checkmark_seal_fill,
+                      'disabled': CupertinoIcons.pause_circle_fill,
+                      'closed': CupertinoIcons.xmark_circle_fill,
+                    },
+                    optionColors: const {
+                      '': kPrimary2,
+                      'active': Color(0xFF34C759),
+                      'disabled': kGold,
+                      'closed': kRed,
                     },
                     onChanged: (v) => setState(() => status = v)),
                 SizedBox(
@@ -5622,12 +5654,20 @@ class _LabeledDrop extends StatelessWidget {
   final String value;
   final Map<String, String> options;
   final void Function(String) onChanged;
+
+  /// أيقونة لكل خيار (إن لم تُمرَّر تُستخدم `icon` الافتراضية).
+  final Map<String, IconData>? optionIcons;
+
+  /// لون لكل خيار (إن لم تُمرَّر يُستخدم `muted`).
+  final Map<String, Color>? optionColors;
   const _LabeledDrop({
     required this.label,
     required this.icon,
     required this.value,
     required this.options,
     required this.onChanged,
+    this.optionIcons,
+    this.optionColors,
   });
 
   @override
@@ -5666,23 +5706,25 @@ class _LabeledDrop extends StatelessWidget {
                 icon: Icon(CupertinoIcons.chevron_down,
                     size: 15, color: context.p.muted),
                 items: options.entries
-                    .map((entry) => DropdownMenuItem(
-                          value: entry.key,
-                          child: Row(
-                            children: [
-                              Icon(icon,
-                                  size: 14,
-                                  color: context.p.muted),
-                              const SizedBox(width: 7),
-                              Flexible(
-                                child: Text(entry.value,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12.5)),
-                              ),
-                            ],
-                          ),
-                        ))
+                    .map((entry) {
+                  final ic = optionIcons?[entry.key] ?? icon;
+                  final col = optionColors?[entry.key] ?? context.p.muted;
+                  return DropdownMenuItem(
+                    value: entry.key,
+                    child: Row(
+                      children: [
+                        Icon(ic, size: 15, color: col),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(entry.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12.5)),
+                        ),
+                      ],
+                    ),
+                  );
+                })
                     .toList(),
                 onChanged: (next) {
                   if (next != null) onChanged(next);
