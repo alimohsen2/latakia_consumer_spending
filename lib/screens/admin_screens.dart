@@ -1115,32 +1115,38 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             const SizedBox(height: 14),
             Row(children: [
-              // زر مسح الفلاتر — بسيط: نص وأيقونة فقط
-              TextButton.icon(
-                onPressed: () {
-                  if (query.text.trim().isNotEmpty ||
-                      role.isNotEmpty ||
-                      div.isNotEmpty ||
-                      status.isNotEmpty) {
-                    setState(() {
-                      query.clear();
-                      role = '';
-                      div = '';
-                      status = '';
-                    });
-                  }
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: kPrimary2,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
+              // زر حذف الفلاتر — يتكيف مع عدد الفلاتر النشطة
+              Builder(builder: (context) {
+                final active = [
+                  query.text.trim().isNotEmpty,
+                  role.isNotEmpty,
+                  div.isNotEmpty,
+                  status.isNotEmpty,
+                ].where((x) => x).length;
+                final enabled = active > 0;
+                return TextButton.icon(
+                  onPressed: enabled
+                      ? () => setState(() {
+                            query.clear();
+                            role = '';
+                            div = '';
+                            status = '';
+                          })
+                      : null,
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: kPrimary2,
+                    disabledForegroundColor: context.p.muted.withValues(alpha: .55),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
                   ),
-                ),
-                icon: const Icon(CupertinoIcons.clear_circled, size: 17),
-                label: const Text('مسح'),
-              ),
+                  icon: const Icon(CupertinoIcons.clear_circled, size: 17),
+                  label: Text(active == 1 ? 'حذف الفلتر' : 'حذف الفلاتر'),
+                );
+              }),
               const Spacer(),
               if (query.text.trim().isNotEmpty ||
                   role.isNotEmpty ||
