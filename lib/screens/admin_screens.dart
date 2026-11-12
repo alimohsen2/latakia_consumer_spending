@@ -1216,11 +1216,12 @@ class _UsersScreenState extends State<UsersScreen> {
                       fontWeight: FontWeight.w800,
                       fontSize: 17,
                       letterSpacing: -.2)),
+              const SizedBox(height: 6),
               Text('${list.length} حساب',
-                  style: TextStyle(
-                      color: context.p.muted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600)),
+                  style: const TextStyle(
+                      color: kGold,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700)),
             ]),
           ]);
           final toggle = Seg(
