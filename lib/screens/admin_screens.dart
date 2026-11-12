@@ -989,7 +989,7 @@ class _UsersScreenState extends State<UsersScreen> {
             const _SectionHead(
                 icon: CupertinoIcons.search,
                 title: 'ابحث في الحسابات'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
             TextField(
               controller: query,
               onChanged: (_) => setState(() {}),
@@ -1034,7 +1034,7 @@ class _UsersScreenState extends State<UsersScreen> {
             const _SectionHead(
                 icon: CupertinoIcons.line_horizontal_3_decrease,
                 title: 'الفلاتر'),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
