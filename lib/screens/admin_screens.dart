@@ -1115,86 +1115,31 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             const SizedBox(height: 14),
             Row(children: [
-              // زر إعادة تعيين — كبسولة زمرّدية متدرجة عند النشاط
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  gradient: (query.text.trim().isNotEmpty ||
-                          role.isNotEmpty ||
-                          div.isNotEmpty ||
-                          status.isNotEmpty)
-                      ? const LinearGradient(
-                          begin: AlignmentDirectional.topStart,
-                          end: AlignmentDirectional.bottomEnd,
-                          colors: [kPrimary2, Color(0xFF17574E)],
-                        )
-                      : null,
-                  color: (query.text.trim().isNotEmpty ||
-                          role.isNotEmpty ||
-                          div.isNotEmpty ||
-                          status.isNotEmpty)
-                      ? null
-                      : context.p.surfaceAlt,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: (query.text.trim().isNotEmpty ||
-                          role.isNotEmpty ||
-                          div.isNotEmpty ||
-                          status.isNotEmpty)
-                      ? [
-                          BoxShadow(
-                            color: kPrimary2.withValues(alpha: .35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(22),
-                    onTap: (query.text.trim().isNotEmpty ||
-                            role.isNotEmpty ||
-                            div.isNotEmpty ||
-                            status.isNotEmpty)
-                        ? () => setState(() {
-                              query.clear();
-                              role = '';
-                              div = '';
-                              status = '';
-                            })
-                        : null,
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(14, 9, 16, 9),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(
-                          CupertinoIcons.arrow_counterclockwise_circle_fill,
-                          size: 18,
-                          color: (query.text.trim().isNotEmpty ||
-                                  role.isNotEmpty ||
-                                  div.isNotEmpty ||
-                                  status.isNotEmpty)
-                              ? Colors.white
-                              : context.p.muted.withValues(alpha: .55),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'إعادة ضبط',
-                          style: TextStyle(
-                              color: (query.text.trim().isNotEmpty ||
-                                      role.isNotEmpty ||
-                                      div.isNotEmpty ||
-                                      status.isNotEmpty)
-                                  ? Colors.white
-                                  : context.p.muted.withValues(alpha: .55),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -.1)),
-                      ]),
-                    ),
+              // زر مسح الفلاتر — بسيط: نص وأيقونة فقط
+              TextButton.icon(
+                onPressed: () {
+                  if (query.text.trim().isNotEmpty ||
+                      role.isNotEmpty ||
+                      div.isNotEmpty ||
+                      status.isNotEmpty) {
+                    setState(() {
+                      query.clear();
+                      role = '';
+                      div = '';
+                      status = '';
+                    });
+                  }
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: kPrimary2,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
                 ),
+                icon: const Icon(CupertinoIcons.clear_circled, size: 17),
+                label: const Text('مسح'),
               ),
               const Spacer(),
               if (query.text.trim().isNotEmpty ||
