@@ -1166,27 +1166,31 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsetsDirectional.fromSTEB(18, 8, 18, 8),
-                decoration: BoxDecoration(
-                  color: kPrimary2.withValues(alpha: .07),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: kPrimary2.withValues(alpha: .18)),
+              if (query.text.trim().isNotEmpty ||
+                  role.isNotEmpty ||
+                  div.isNotEmpty ||
+                  status.isNotEmpty)
+                Container(
+                  padding: const EdgeInsetsDirectional.fromSTEB(18, 8, 18, 8),
+                  decoration: BoxDecoration(
+                    color: kPrimary2.withValues(alpha: .07),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: kPrimary2.withValues(alpha: .18)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('${list.length}',
+                        style: const TextStyle(
+                            color: kPrimary2,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                    const SizedBox(width: 6),
+                    Text('نتيجة',
+                        style: TextStyle(
+                            color: context.p.muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ]),
                 ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('${list.length}',
-                      style: const TextStyle(
-                          color: kPrimary2,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800)),
-                  const SizedBox(width: 6),
-                  Text('نتيجة',
-                      style: TextStyle(
-                          color: context.p.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ]),
-              ),
             ]),
             ],
           ),
