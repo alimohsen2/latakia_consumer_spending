@@ -1217,10 +1217,10 @@ class _UsersScreenState extends State<UsersScreen> {
                       fontSize: 17,
                       letterSpacing: -.2)),
               const SizedBox(height: 6),
-              Text('${list.length} حساب',
+              Text('${list.length}  حساب',
                   style: const TextStyle(
-                      color: kGold,
-                      fontSize: 12.5,
+                      color: Color(0xFF8A6A1F),
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w700)),
             ]),
           ]);
