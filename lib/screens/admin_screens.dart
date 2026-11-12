@@ -5788,17 +5788,29 @@ class _SectionHead extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Container(
-        width: 4,
-        height: 16,
-        decoration: const BoxDecoration(
-          color: kPrimary2,
-          borderRadius: BorderRadius.all(Radius.circular(2)),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+            colors: [Color(0xFFE8C766), Color(0xFFB8860B)],
+          ),
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: [
+            BoxShadow(
+              color: kGold.withValues(alpha: .35),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        child: Icon(icon, size: 13, color: const Color(0xFF3A2B12)),
       ),
       const SizedBox(width: 8),
       Text(title,
           style: const TextStyle(
-              color: Color(0xFF17574E),
+              color: Color(0xFF5A4A1A),
               fontSize: 14,
               fontWeight: FontWeight.w800)),
     ]);
