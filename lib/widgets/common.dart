@@ -196,11 +196,12 @@ class PageHeader extends StatelessWidget {
                     color: titleColor ?? context.p.text)),
             if (subtitle.isNotEmpty)
               Padding(
-                  padding: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: 6, bottom: 6),
                   child: Text(subtitle,
                       style: TextStyle(
                           color: subtitleColor ?? context.p.muted,
-                          fontSize: 14))),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600))),
           ]),
         ),
         const SizedBox(width: 12),

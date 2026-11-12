@@ -903,8 +903,7 @@ class _UsersScreenState extends State<UsersScreen> {
 
     return PageBody(children: [
       PageHeader('إدارة المستخدمين',
-          subtitle:
-              'الفريق بالكامل في مكان واحد — عرض وإنشاء وتعديل وإغلاق الحسابات',
+          subtitle: 'عرض وإنشاء وتعديل وإغلاق الحسابات',
           actions: [
             FilledButton.icon(
               onPressed: () => context.go('/users/new'),
