@@ -1115,53 +1115,84 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             const SizedBox(height: 14),
             Row(children: [
-              // زر إعادة تعيين — بسيط ونظيف بدون حدود
-              Material(
-                color: (query.text.trim().isNotEmpty ||
-                        role.isNotEmpty ||
-                        div.isNotEmpty ||
-                        status.isNotEmpty)
-                    ? kPrimary2.withValues(alpha: .09)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: (query.text.trim().isNotEmpty ||
+              // زر إعادة تعيين — كبسولة زمرّدية متدرجة عند النشاط
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  gradient: (query.text.trim().isNotEmpty ||
                           role.isNotEmpty ||
                           div.isNotEmpty ||
                           status.isNotEmpty)
-                      ? () => setState(() {
-                            query.clear();
-                            role = '';
-                            div = '';
-                            status = '';
-                          })
+                      ? const LinearGradient(
+                          begin: AlignmentDirectional.topStart,
+                          end: AlignmentDirectional.bottomEnd,
+                          colors: [kPrimary2, Color(0xFF17574E)],
+                        )
                       : null,
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 8),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(
-                        CupertinoIcons.arrow_counterclockwise_circle_fill,
-                        size: 16,
-                        color: (query.text.trim().isNotEmpty ||
-                                role.isNotEmpty ||
-                                div.isNotEmpty ||
-                                status.isNotEmpty)
-                            ? kPrimary2
-                            : context.p.muted.withValues(alpha: .5),
-                      ),
-                      const SizedBox(width: 6),
-                      Text('إعادة ضبط',
+                  color: (query.text.trim().isNotEmpty ||
+                          role.isNotEmpty ||
+                          div.isNotEmpty ||
+                          status.isNotEmpty)
+                      ? null
+                      : context.p.surfaceAlt,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: (query.text.trim().isNotEmpty ||
+                          role.isNotEmpty ||
+                          div.isNotEmpty ||
+                          status.isNotEmpty)
+                      ? [
+                          BoxShadow(
+                            color: kPrimary2.withValues(alpha: .35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: (query.text.trim().isNotEmpty ||
+                            role.isNotEmpty ||
+                            div.isNotEmpty ||
+                            status.isNotEmpty)
+                        ? () => setState(() {
+                              query.clear();
+                              role = '';
+                              div = '';
+                              status = '';
+                            })
+                        : null,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(14, 9, 16, 9),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(
+                          CupertinoIcons.arrow_counterclockwise_circle_fill,
+                          size: 18,
+                          color: (query.text.trim().isNotEmpty ||
+                                  role.isNotEmpty ||
+                                  div.isNotEmpty ||
+                                  status.isNotEmpty)
+                              ? Colors.white
+                              : context.p.muted.withValues(alpha: .55),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'إعادة ضبط',
                           style: TextStyle(
                               color: (query.text.trim().isNotEmpty ||
                                       role.isNotEmpty ||
                                       div.isNotEmpty ||
                                       status.isNotEmpty)
-                                  ? kPrimary2
-                                  : context.p.muted.withValues(alpha: .5),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700)),
-                    ]),
+                                  ? Colors.white
+                                  : context.p.muted.withValues(alpha: .55),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -.1)),
+                      ]),
+                    ),
                   ),
                 ),
               ),
