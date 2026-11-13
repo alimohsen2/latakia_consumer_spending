@@ -7,32 +7,77 @@ import '../core/theme.dart';
 import '../data/store.dart';
 
 /// بطاقة بحواف مستمرة (squircle) وظل ناعم كما في تطبيقات أبل.
-class AppCard extends StatelessWidget {
+/// عند تمرير [onTap] تتحول لبطاقة تفاعلية: ظل بارز وحدود مميزة عند التحويم
+/// ومؤشر نقر، وتنفذ النقر عند الضغط.
+class AppCard extends StatefulWidget {
   final Widget child;
   final EdgeInsets padding;
+  final VoidCallback? onTap;
   const AppCard(
       {super.key,
       required this.child,
-      this.padding = const EdgeInsets.all(18)});
+      this.padding = const EdgeInsets.all(18),
+      this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: ShapeDecoration(
-          color: context.p.surface,
-          shape: ContinuousRectangleBorder(
+  State<AppCard> createState() => _AppCardState();
+}
+
+class _AppCardState extends State<AppCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final interactive = widget.onTap != null;
+    final lifted = interactive && _hover;
+    return MouseRegion(
+      onEnter:
+          interactive ? (_) => setState(() => _hover = true) : null,
+      onExit:
+          interactive ? (_) => setState(() => _hover = false) : null,
+      cursor: interactive ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: interactive ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, lifted ? -4 : 0, 0)
+            ..multiply(Matrix4.diagonal3Values(
+                lifted ? 1.015 : 1.0, lifted ? 1.015 : 1.0, 1.0)),
+          transformAlignment: Alignment.center,
+          padding: widget.padding,
+          decoration: ShapeDecoration(
+            color: lifted
+                ? Color.alphaBlend(
+                    kGold.withValues(alpha: .07), context.p.surface)
+                : context.p.surface,
+            shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(28),
-              side: BorderSide(color: context.p.border, width: .5)),
-          shadows: [
-            BoxShadow(
-                color: context.p.isDark
-                    ? const Color(0x33000000)
-                    : const Color(0x0F000000),
-                blurRadius: 10,
-                offset: const Offset(0, 2))
-          ],
+              side: BorderSide(
+                color: lifted
+                    ? kGold.withValues(alpha: .9)
+                    : context.p.border,
+                width: lifted ? 1.6 : .5,
+              ),
+            ),
+            shadows: [
+              BoxShadow(
+                color: lifted
+                    ? kGold.withValues(
+                        alpha: context.p.isDark ? .30 : .38)
+                    : (context.p.isDark
+                        ? const Color(0x33000000)
+                        : const Color(0x0F000000)),
+                blurRadius: lifted ? 28 : 10,
+                offset: lifted ? const Offset(0, 14) : const Offset(0, 2),
+              )
+            ],
+          ),
+          child: widget.child,
         ),
-        child: child,
-      );
+      ),
+    );
+  }
 }
 
 /// زر تبديل الوضع الفاتح/الداكن.
@@ -59,7 +104,14 @@ class PageBody extends StatelessWidget {
 
   /// خلفية اختيارية للصفحة (تُستخدم للوحة الرئيسية الزيتية).
   final Color? background;
-  const PageBody({super.key, required this.children, this.background});
+
+  /// أقصى عرض للمحتوى؛ القيمة `double.infinity` تمدده لكامل الشاشة.
+  final double contentMaxWidth;
+  const PageBody(
+      {super.key,
+      required this.children,
+      this.background,
+      this.contentMaxWidth = 1240});
   @override
   Widget build(BuildContext context) {
     final l = <Widget>[];
@@ -71,7 +123,7 @@ class PageBody extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1240),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: l),
         ),
@@ -144,11 +196,13 @@ class PageHeader extends StatelessWidget {
                     color: titleColor ?? context.p.text)),
             if (subtitle.isNotEmpty)
               Padding(
-                  padding: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: 12, bottom: 6),
                   child: Text(subtitle,
                       style: TextStyle(
-                          color: subtitleColor ?? context.p.muted,
-                          fontSize: 14))),
+                          color: subtitleColor ??
+                              context.p.muted.withValues(alpha: .62),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600))),
           ]),
         ),
         const SizedBox(width: 12),
@@ -248,46 +302,76 @@ class GridTable extends StatelessWidget {
   final List<int>? flex;
   final String empty;
   final double? minWidth;
+
+  /// عند تمريرها تصبح الصفوف تفاعلية: تظليل عند التحويم والنقر هنا ينفذ
+  /// [onRowTap] مع رقم الصف.
+  final void Function(int index)? onRowTap;
+
+  /// أرقام الأعمدة التي تُوسَّط عناوينها وخلاياها.
+  final Set<int> centerColumns;
   const GridTable(
       {super.key,
       required this.heads,
       required this.rows,
       this.flex,
       this.minWidth,
+      this.onRowTap,
+      this.centerColumns = const {},
       this.empty = 'لا توجد بيانات'});
   @override
   Widget build(BuildContext context) {
     final f = flex ?? List.filled(heads.length, 1);
+    final headerStyle = TextStyle(
+        fontWeight: FontWeight.w800,
+        fontSize: 14.5,
+        letterSpacing: .5,
+        color: context.p.isDark
+            ? const Color(0xFFBFE9DE)
+            : const Color(0xFF17574E));
     final table = Column(children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      // رأس الجدول: شريط كريمي بلمسة ذهبية أسفله — مقروء وفخم
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        decoration: BoxDecoration(
+          color: context.p.surfaceAlt
+              .withValues(alpha: context.p.isDark ? .30 : .70),
+          border: Border(
+            bottom: BorderSide(
+                color: kGold.withValues(alpha: .55), width: 1.3),
+          ),
+        ),
         child: Row(children: [
           for (var i = 0; i < heads.length; i++)
             Expanded(
                 flex: f[i],
                 child: Text(heads[i],
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: context.p.muted)))
+                    textAlign: centerColumns.contains(i)
+                        ? TextAlign.center
+                        : TextAlign.start,
+                    style: headerStyle))
         ]),
       ),
-      const Divider(),
       if (rows.isEmpty)
         Padding(
             padding: const EdgeInsets.all(32),
             child: Text(empty, style: TextStyle(color: context.p.muted))),
       for (var n = 0; n < rows.length; n++) ...[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(children: [
-            for (var i = 0; i < rows[n].length; i++)
-              Expanded(
-                  flex: f[i],
-                  child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: rows[n][i]))
-          ]),
+        _HoverRow(
+          onTap: onRowTap == null ? null : () => onRowTap!(n),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(children: [
+              for (var i = 0; i < rows[n].length; i++)
+                Expanded(
+                    flex: f[i],
+                    child: Align(
+                        alignment: centerColumns.contains(i)
+                            ? AlignmentDirectional.center
+                            : AlignmentDirectional.centerStart,
+                        child: rows[n][i]))
+            ]),
+          ),
         ),
         if (n < rows.length - 1)
           const Padding(
@@ -298,12 +382,71 @@ class GridTable extends StatelessWidget {
 
     return AppCard(
       padding: EdgeInsets.zero,
-      child: minWidth == null
-          ? table
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(width: minWidth, child: table),
+      child: ClipPath(
+        clipper: ShapeBorderClipper(
+          shape: const ContinuousRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(28))),
+        ),
+        child: minWidth == null
+            ? table
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: minWidth, child: table),
+              ),
+      ),
+    );
+  }
+}
+
+/// صف جدول تفاعلي: يُغلَّف بإطار ذهبي بسيط عند تحويم الفأرة، ومؤشر نقر، وينفذ [onTap].
+class _HoverRow extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _HoverRow({required this.child, this.onTap});
+  @override
+  State<_HoverRow> createState() => _HoverRowState();
+}
+
+class _HoverRowState extends State<_HoverRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    final active = enabled && _hover;
+    const ease = Curves.easeOutCubic;
+    const duration = Duration(milliseconds: 260);
+    final scale = active ? 1.015 : 1.0;
+    final lift = active ? -4.0 : 0.0;
+    return MouseRegion(
+      onEnter: enabled ? (_) => setState(() => _hover = true) : null,
+      onExit: enabled ? (_) => setState(() => _hover = false) : null,
+      cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: duration,
+          curve: ease,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          transform: Matrix4.translationValues(0, lift, 0)
+            ..multiply(Matrix4.diagonal3Values(scale, scale, 1.0)),
+          transformAlignment: Alignment.center,
+          // هامش 8 + حشوة 12 = 20 لتتوازى مع رأس الأعمدة
+          decoration: BoxDecoration(
+            color: active ? kGold.withValues(alpha: .10) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active
+                  ? kGold.withValues(alpha: .9)
+                  : kGold.withValues(alpha: 0),
+              width: 1.6,
             ),
+          ),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }
@@ -317,7 +460,10 @@ class Seg extends StatelessWidget {
   final List<String> items;
   final int index;
   final void Function(int) onChanged;
-  const Seg(this.items, this.index, this.onChanged, {super.key});
+
+  /// إن مُرّرت أيقونات، تُعرض الأيقونات بدل النصوص (وضع التبديل الأنيق).
+  final List<IconData>? icons;
+  const Seg(this.items, this.index, this.onChanged, {super.key, this.icons});
   @override
   Widget build(BuildContext context) => Align(
         alignment: AlignmentDirectional.centerStart,
@@ -330,13 +476,24 @@ class Seg extends StatelessWidget {
             children: {
               for (var i = 0; i < items.length; i++)
                 i: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    child: Text(items[i],
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: context.p.text)))
+                    padding: icons != null
+                        ? const EdgeInsets.symmetric(
+                            horizontal: 13, vertical: 7)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                    child: icons != null
+                        ? Tooltip(
+                            message: items[i],
+                            child: Icon(icons![i],
+                                size: 18,
+                                color: i == index
+                                    ? kPrimary2
+                                    : context.p.muted))
+                        : Text(items[i],
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: context.p.text)))
             },
             onValueChanged: (v) {
               if (v != null) onChanged(v);
@@ -440,6 +597,36 @@ class Field extends StatelessWidget {
 
 Widget gap(double w) => SizedBox(width: w, height: w);
 
+/// مجموعة بطاقات إحصائية تتكيّف مع عرض الشاشة: عمود واحد على الهاتف،
+/// وعمودان/ثلاثة/أربعة أعمدة متساوية على العرض الكبير ليملأ المكان كله.
+class StatGrid extends StatelessWidget {
+  final List<Widget> children;
+  const StatGrid({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        const spacing = 12.0;
+        final count = maxWidth >= 1100
+            ? 4
+            : maxWidth >= 820
+                ? 3
+                : maxWidth >= 540
+                    ? 2
+                    : 1;
+        final itemWidth = (maxWidth - spacing * (count - 1)) / count;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final child in children)
+              SizedBox(width: itemWidth, child: child),
+          ],
+        );
+      });
+}
+
 Widget rowOf(List<Widget> l, {double g = 12}) {
   final out = <Widget>[];
   for (final w in l) {
@@ -462,13 +649,33 @@ class Drop extends StatelessWidget {
   Widget build(BuildContext context) => Expanded(
         flex: flex,
         child: InputDecorator(
-          decoration: InputDecoration(labelText: label, enabled: enabled),
+          decoration: InputDecoration(
+            labelText: label,
+            enabled: enabled,
+            filled: true,
+            fillColor: context.p.surfaceAlt,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: kPrimary2.withValues(alpha: .6),
+                width: 1.5,
+              ),
+            ),
+          ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: items.containsKey(value) ? value : items.keys.first,
               isDense: true,
               isExpanded: true,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               items: items.entries
                   .map((e) =>
                       DropdownMenuItem(value: e.key, child: Text(e.value)))

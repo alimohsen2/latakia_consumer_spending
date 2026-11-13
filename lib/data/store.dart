@@ -53,6 +53,9 @@ class AppStore extends ChangeNotifier {
   List<Map<String, dynamic>> savedFilters = [];
   List<Map<String, dynamic>> alertLog = [];
   Map<String, List<String>> perms = defaultPerms();
+
+  /// صلاحيات مخصصة لكل حساب على حدة (تُضاف/تُستثنى فوق صلاحيات دوره).
+  Map<String, List<String>> userPerms = {};
   Map<String, List<String>> routing = defaultRouting();
   Map<String, dynamic> settings = {};
   Map<String, SalesSeries> sales = {};
@@ -130,6 +133,7 @@ class AppStore extends ChangeNotifier {
         'savedFilters': savedFilters,
         'alertLog': alertLog,
         'perms': perms,
+        'userPerms': userPerms,
         'routing': routing,
         'settings': settings,
       };
@@ -163,6 +167,8 @@ class AppStore extends ChangeNotifier {
     perms = ((j['perms'] as Map?) ?? {})
         .map((k, v) => MapEntry(k as String, List<String>.from(v as List)));
     if (perms.isEmpty) perms = defaultPerms();
+    userPerms = ((j['userPerms'] as Map?) ?? {})
+        .map((k, v) => MapEntry(k as String, List<String>.from(v as List)));
     final defaultRolePerms = defaultPerms();
     final oldDivisionHeadPerms = perms.remove('divisionHead');
     for (final role in ['financeDirector', 'infoSectionHead', 'monitor']) {
@@ -174,6 +180,17 @@ class AppStore extends ChangeNotifier {
           oldDivisionHeadPerms ?? defaultRolePerms[role]!,
         );
         if (oldDivisionHeadPerms != null) migrated = true;
+      }
+    }
+    // تُضاف صلاحية «عرض صلاحيات المستخدم» للنسخ المحفوظة قبل إضافتها.
+    for (final role in perms.keys.toList()) {
+      if (role == 'sysadmin') {
+        perms[role] = kPerms.keys.toList();
+        continue;
+      }
+      if (!perms[role]!.contains('permissions.view')) {
+        perms[role]!.add('permissions.view');
+        migrated = true;
       }
     }
     // مدير النظام يملك كل الصلاحيات دائماً، حتى في النسخ المحفوظة قبل إضافة صلاحيات جديدة.
@@ -588,8 +605,54 @@ class AppStore extends ChangeNotifier {
     if (me == null) return false;
     // مدير النظام يملك كل الصلاحيات (يمنع اختفاء أقسام من القائمة بحساب admin).
     if (me!.role == 'sysadmin') return true;
-    final list = perms[me!.role] ?? [];
+    final list = userPerms[me!.id] ?? perms[me!.role] ?? [];
     return perm.split('|').any(list.contains);
+  }
+
+  /// الصلاحيات الفعلية لحساب (مدير النظام → كاملة، وإلا المخصص للحساب ثم دور حساب).
+  List<String> effectivePermsFor(AppUser user) {
+    if (user.role == 'sysadmin') return kPerms.keys.toList();
+    final override = userPerms[user.id];
+    return List<String>.from(override ?? perms[user.role] ?? const []);
+  }
+
+  /// هل لدى هذا الحساب استثناءات صلاحيات مخصصة؟
+  bool hasPermOverride(String userId) => userPerms.containsKey(userId);
+
+  void addUserPerm(String userId, String perm) {
+    final user = _findUserById(userId);
+    if (user == null || user.role == 'sysadmin') return;
+    final list = List<String>.from(effectivePermsFor(user));
+    if (list.contains(perm)) return;
+    list.add(perm);
+    userPerms[userId] = list;
+    _log('إضافة صلاحية للحساب', user.name, kPerms[perm] ?? perm);
+    _save();
+  }
+
+  void removeUserPerm(String userId, String perm) {
+    final user = _findUserById(userId);
+    if (user == null || user.role == 'sysadmin') return;
+    final list = List<String>.from(effectivePermsFor(user));
+    if (!list.remove(perm)) return;
+    userPerms[userId] = list;
+    _log('إزالة صلاحية من الحساب', user.name, kPerms[perm] ?? perm);
+    _save();
+  }
+
+  void resetUserPerms(String userId) {
+    final user = _findUserById(userId);
+    if (user == null) return;
+    userPerms.remove(userId);
+    _log('مسح استثناءات الصلاحيات', user.name, '');
+    _save();
+  }
+
+  AppUser? _findUserById(String id) {
+    for (final user in users) {
+      if (user.id == id) return user;
+    }
+    return null;
   }
 
   bool get inArchiveDivision => me?.division == 'archive';
@@ -1666,6 +1729,7 @@ class AppStore extends ChangeNotifier {
   void resetDemo() {
     sales = {};
     attachmentStore.clearAll();
+    userPerms = {};
     _seed();
     loadSales();
   }

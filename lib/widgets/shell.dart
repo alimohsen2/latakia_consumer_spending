@@ -48,6 +48,8 @@ const _items = [
       'reports.center', 'التقارير', Color(0xFF9EC5FF)),
   _Nav('/users', 'المستخدمون', CupertinoIcons.person_2, 'users.manage',
       'المستخدمون والصلاحيات', Color(0xFFD6C2FF)),
+  _Nav('/users/new', 'إنشاء حساب', CupertinoIcons.person_add, 'users.manage',
+      'المستخدمون والصلاحيات', Color(0xFF9EC5FF)),
   _Nav(
       '/active-users',
       'المستخدمون الفعّالون حاليًا',
@@ -56,7 +58,7 @@ const _items = [
       'المستخدمون والصلاحيات',
       Color(0xFF9FE3C0)),
   _Nav('/profile', 'ملفي الشخصي', CupertinoIcons.person_crop_circle, null,
-      'المستخدمون والصلاحيات', Color(0xFF9EC5FF)),
+      'الرئيسية', Color(0xFF9EC5FF)),
   _Nav('/permissions', 'الصلاحيات', CupertinoIcons.lock_shield,
       'permissions.manage', 'المستخدمون والصلاحيات', Color(0xFFFFD27A)),
   _Nav('/serials', 'دفاتر أرقام المحاضر', CupertinoIcons.list_number,

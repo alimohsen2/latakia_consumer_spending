@@ -66,13 +66,32 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       SizedBox(
         width: 190,
         child: InputDecorator(
-          decoration: InputDecoration(labelText: label),
+          decoration: InputDecoration(
+            labelText: label,
+            filled: true,
+            fillColor: context.p.surfaceAlt,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                color: kPrimary2.withValues(alpha: .6),
+                width: 1.5,
+              ),
+            ),
+          ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: items.containsKey(value) ? value : items.keys.first,
               isDense: true,
               isExpanded: true,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               items: items.entries
                   .map((e) =>
                       DropdownMenuItem(value: e.key, child: Text(e.value)))
@@ -115,25 +134,18 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
               label: const Text('تصدير الفهرس'),
             ),
           ]),
-      Wrap(spacing: 12, runSpacing: 12, children: [
-        SizedBox(
-            width: 270,
-            child: StatCard('محاضر في الأرشيف', '${all.length}',
-                CupertinoIcons.archivebox)),
-        SizedBox(
-            width: 270,
-            child: StatCard(
-                'مواقع أرشيف مسجّلة', '$archivedCount', CupertinoIcons.folder)),
-        SizedBox(
-            width: 270,
-            child: StatCard('بانتظار تحديد الموقع', '$missing',
-                CupertinoIcons.exclamationmark_triangle,
-                warn: missing > 0)),
-        SizedBox(
-            width: 270,
-            child:
-                StatCard('مرفقات محفوظة', '$atts', CupertinoIcons.paperclip)),
-      ]),
+      StatGrid(
+        children: [
+          StatCard('محاضر في الأرشيف', '${all.length}',
+              CupertinoIcons.archivebox),
+          StatCard(
+              'مواقع أرشيف مسجّلة', '$archivedCount', CupertinoIcons.folder),
+          StatCard('بانتظار تحديد الموقع', '$missing',
+              CupertinoIcons.exclamationmark_triangle,
+              warn: missing > 0),
+          StatCard('مرفقات محفوظة', '$atts', CupertinoIcons.paperclip),
+        ],
+      ),
       AppCard(
         child: Wrap(
             spacing: 12,
